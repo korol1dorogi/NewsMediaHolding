@@ -13,7 +13,8 @@ paths:
     get:
       operationId: getHealth
       summary: Процесс жив
-      tags: [system]
+      tags:
+        - system
       security: []
       responses:
         "200":
@@ -28,7 +29,8 @@ paths:
     get:
       operationId: getReady
       summary: Сервис готов принимать трафик
-      tags: [system]
+      tags:
+        - system
       security: []
       responses:
         "200":
@@ -53,6 +55,244 @@ paths:
                 checks:
                   database: true
                   redis: false
+  /api/auth/csrf:
+    get:
+      operationId: authGetCsrf
+      tags:
+        - auth
+      summary: Получить CSRF cookie и token
+      description: >-
+        K2: Django sessions и один origin, без JWT. Ответы не кешируются. Имя роли не даёт прав на чужие
+        объекты. Примеры синтетические.
+      responses:
+        "200":
+          description: Успешно
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                example: no-store
+            Set-Cookie:
+              schema:
+                type: string
+                example: csrftoken=demo-placeholder; Path=/; SameSite=Lax
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthCsrfOutput"
+              example:
+                csrf_token: demo-csrf-token-placeholder
+      security: []
+  /api/auth/login:
+    post:
+      operationId: authLogin
+      tags:
+        - auth
+      summary: Войти в аккаунт
+      description: >-
+        K2: Django sessions и один origin, без JWT. Ответы не кешируются. Имя роли не даёт прав на чужие
+        объекты. Примеры синтетические. CSRF проверяется и до входа. Вход ротирует сессию и CSRF cookie.
+        Неверный/неизвестный/неактивный аккаунт получает одинаковую401 ошибку. Ограничение общего cache
+        независимо по реальному ingress IP и HMAC имени; malformed input тоже учитывается по IP.
+      responses:
+        "200":
+          description: Успешно
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                example: no-store
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthUser"
+              example:
+                id: 00000000-0000-4000-8000-000000000001
+                username: demo_anya
+                role: user
+                is_demo: true
+        "400":
+          description: Некорректный запрос
+          headers: {}
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthError"
+              example:
+                code: validation_error
+                message: Демонстрационная ошибка без секретов.
+                details: {}
+        "401":
+          description: Нет сессии или неверные учётные данные
+          headers:
+            WWW-Authenticate:
+              schema:
+                type: string
+                example: Session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthError"
+              example:
+                code: authentication_required
+                message: Демонстрационная ошибка без секретов.
+                details: {}
+        "403":
+          description: CSRF/доступ запрещён
+          headers: {}
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthError"
+              example:
+                code: permission_denied
+                message: Демонстрационная ошибка без секретов.
+                details: {}
+        "429":
+          description: Лимит попыток входа
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+                minimum: 1
+                example: 60
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthError"
+              example:
+                code: throttled
+                message: Демонстрационная ошибка без секретов.
+                details: {}
+        "503":
+          description: Общий cache недоступен
+          headers: {}
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthError"
+              example:
+                code: auth_unavailable
+                message: Демонстрационная ошибка без секретов.
+                details: {}
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthLoginInput"
+            example:
+              username: demo_anya
+              password: demo-user-placeholder
+      parameters:
+        - name: X-CSRFToken
+          in: header
+          required: true
+          description: Текущий token из GET /api/auth/csrf; после login cookie ротируется.
+          schema:
+            type: string
+            minLength: 1
+            example: demo-csrf-token-placeholder
+  /api/auth/logout:
+    post:
+      operationId: authLogout
+      tags:
+        - auth
+      summary: Завершить текущую сессию
+      description: >-
+        K2: Django sessions и один origin, без JWT. Ответы не кешируются. Имя роли не даёт прав на чужие
+        объекты. Примеры синтетические.
+      responses:
+        "200":
+          description: Успешно
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                example: no-store
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthLogoutOutput"
+              example:
+                status: logged_out
+        "401":
+          description: Нет сессии или неверные учётные данные
+          headers:
+            WWW-Authenticate:
+              schema:
+                type: string
+                example: Session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthError"
+              example:
+                code: authentication_required
+                message: Демонстрационная ошибка без секретов.
+                details: {}
+        "403":
+          description: CSRF/доступ запрещён
+          headers: {}
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthError"
+              example:
+                code: permission_denied
+                message: Демонстрационная ошибка без секретов.
+                details: {}
+      parameters:
+        - name: X-CSRFToken
+          in: header
+          required: true
+          description: Текущий token из GET /api/auth/csrf; после login cookie ротируется.
+          schema:
+            type: string
+            minLength: 1
+            example: demo-csrf-token-placeholder
+  /api/auth/me:
+    get:
+      operationId: authGetMe
+      tags:
+        - auth
+      summary: Текущая учётная запись
+      description: >-
+        K2: Django sessions и один origin, без JWT. Ответы не кешируются. Имя роли не даёт прав на чужие
+        объекты. Примеры синтетические.
+      responses:
+        "200":
+          description: Успешно
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                example: no-store
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthUser"
+              example:
+                id: 00000000-0000-4000-8000-000000000001
+                username: demo_anya
+                role: user
+                is_demo: true
+        "401":
+          description: Нет сессии или неверные учётные данные
+          headers:
+            WWW-Authenticate:
+              schema:
+                type: string
+                example: Session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthError"
+              example:
+                code: authentication_required
+                message: Демонстрационная ошибка без секретов.
+                details: {}
 components:
   securitySchemes:
     session:
@@ -62,25 +302,137 @@ components:
   schemas:
     Health:
       type: object
-      required: [status]
+      required:
+        - status
       properties:
         status:
           type: string
-          enum: [ok]
+          enum:
+            - ok
     Readiness:
       type: object
-      required: [status, checks]
+      required:
+        - status
+        - checks
       properties:
         status:
           type: string
-          enum: [ready, not_ready]
+          enum:
+            - ready
+            - not_ready
         checks:
           type: object
-          required: [database, redis]
+          required:
+            - database
+            - redis
           properties:
             database:
               type: boolean
             redis:
               type: boolean
+    AuthRole:
+      type: string
+      enum:
+        - user
+        - lawyer
+        - moderator
+        - editor
+      example: user
+    AuthUser:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - username
+        - role
+        - is_demo
+      properties:
+        id:
+          type: string
+          format: uuid
+        username:
+          type: string
+          minLength: 1
+          maxLength: 150
+        role:
+          $ref: "#/components/schemas/AuthRole"
+        is_demo:
+          type: boolean
+      example:
+        id: 00000000-0000-4000-8000-000000000001
+        username: demo_anya
+        role: user
+        is_demo: true
+    AuthLoginInput:
+      type: object
+      additionalProperties: false
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+          minLength: 1
+          maxLength: 150
+        password:
+          type: string
+          minLength: 1
+          maxLength: 4096
+          writeOnly: true
+      example:
+        username: demo_anya
+        password: demo-user-placeholder
+    AuthCsrfOutput:
+      type: object
+      additionalProperties: false
+      required:
+        - csrf_token
+      properties:
+        csrf_token:
+          type: string
+          minLength: 1
+          description: Маскированный CSRF token; ответ также устанавливает cookie csrftoken.
+      example:
+        csrf_token: demo-csrf-token-placeholder
+    AuthLogoutOutput:
+      type: object
+      additionalProperties: false
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum:
+            - logged_out
+      example:
+        status: logged_out
+    AuthErrorDetails:
+      type: object
+      additionalProperties:
+        type: array
+        items:
+          type: string
+      example: {}
+    AuthError:
+      type: object
+      additionalProperties: false
+      required:
+        - code
+        - message
+        - details
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          $ref: "#/components/schemas/AuthErrorDetails"
+      example:
+        code: authentication_required
+        message: Вход не выполнен или учётные данные неверны.
+        details: {}
 security:
   - session: []
+tags:
+  - name: auth
+    description: "K2: сессии, CSRF, четыре роли; персональные данные и рейтинг не выдаются."

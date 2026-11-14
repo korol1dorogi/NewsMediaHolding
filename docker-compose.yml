@@ -16,6 +16,13 @@ x-backend-env: &backend-env
   LLM_BASE_URL: ${LLM_BASE_URL:-}
   LLM_API_KEY: ${LLM_API_KEY:-}
   LLM_MODEL: ${LLM_MODEL:-}
+  AUTH_LOGIN_ATTEMPTS: ${AUTH_LOGIN_ATTEMPTS:-10}
+  AUTH_LOGIN_WINDOW_SECONDS: ${AUTH_LOGIN_WINDOW_SECONDS:-60}
+  AUTH_TRUST_PROXY_HEADER: ${AUTH_TRUST_PROXY_HEADER:-true}
+  DEMO_USER_PASSWORD: ${DEMO_USER_PASSWORD:-demo-user-placeholder}
+  DEMO_LAWYER_PASSWORD: ${DEMO_LAWYER_PASSWORD:-demo-lawyer-placeholder}
+  DEMO_MODERATOR_PASSWORD: ${DEMO_MODERATOR_PASSWORD:-demo-moderator-placeholder}
+  DEMO_EDITOR_PASSWORD: ${DEMO_EDITOR_PASSWORD:-demo-editor-placeholder}
 
 services:
   db:
@@ -42,6 +49,8 @@ services:
 
   backend:
     build: ./backend
+    volumes:
+      - admin-static:/app/staticfiles
     environment:
       <<: *backend-env
     depends_on:
@@ -78,6 +87,8 @@ services:
 
   web:
     build: ./frontend
+    volumes:
+      - admin-static:/srv/admin-static:ro
     ports:
       - "${WEB_PORT:-8080}:80"
     depends_on:
@@ -101,3 +112,4 @@ services:
 
 volumes:
   db-data:
+  admin-static:

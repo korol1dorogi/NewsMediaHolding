@@ -38,6 +38,86 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/auth/csrf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Получить CSRF cookie и token
+         * @description K2: Django sessions и один origin, без JWT. Ответы не кешируются. Имя роли не даёт прав на чужие объекты. Примеры синтетические.
+         */
+        get: operations["authGetCsrf"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Войти в аккаунт
+         * @description K2: Django sessions и один origin, без JWT. Ответы не кешируются. Имя роли не даёт прав на чужие объекты. Примеры синтетические. CSRF проверяется и до входа. Вход ротирует сессию и CSRF cookie. Неверный/неизвестный/неактивный аккаунт получает одинаковую401 ошибку. Ограничение общего cache независимо по реальному ingress IP и HMAC имени; malformed input тоже учитывается по IP.
+         */
+        post: operations["authLogin"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Завершить текущую сессию
+         * @description K2: Django sessions и один origin, без JWT. Ответы не кешируются. Имя роли не даёт прав на чужие объекты. Примеры синтетические.
+         */
+        post: operations["authLogout"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Текущая учётная запись
+         * @description K2: Django sessions и один origin, без JWT. Ответы не кешируются. Имя роли не даёт прав на чужие объекты. Примеры синтетические.
+         */
+        get: operations["authGetMe"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -53,6 +133,70 @@ export interface components {
                 database: boolean;
                 redis: boolean;
             };
+        };
+        /**
+         * @example user
+         * @enum {string}
+         */
+        AuthRole: "user" | "lawyer" | "moderator" | "editor";
+        /**
+         * @example {
+         *       "id": "00000000-0000-4000-8000-000000000001",
+         *       "username": "demo_anya",
+         *       "role": "user",
+         *       "is_demo": true
+         *     }
+         */
+        AuthUser: {
+            /** Format: uuid */
+            id: string;
+            username: string;
+            role: components["schemas"]["AuthRole"];
+            is_demo: boolean;
+        };
+        /**
+         * @example {
+         *       "username": "demo_anya",
+         *       "password": "demo-user-placeholder"
+         *     }
+         */
+        AuthLoginInput: {
+            username: string;
+            password: string;
+        };
+        /**
+         * @example {
+         *       "csrf_token": "demo-csrf-token-placeholder"
+         *     }
+         */
+        AuthCsrfOutput: {
+            /** @description Маскированный CSRF token; ответ также устанавливает cookie csrftoken. */
+            csrf_token: string;
+        };
+        /**
+         * @example {
+         *       "status": "logged_out"
+         *     }
+         */
+        AuthLogoutOutput: {
+            /** @enum {string} */
+            status: "logged_out";
+        };
+        /** @example {} */
+        AuthErrorDetails: {
+            [key: string]: string[];
+        };
+        /**
+         * @example {
+         *       "code": "authentication_required",
+         *       "message": "Вход не выполнен или учётные данные неверны.",
+         *       "details": {}
+         *     }
+         */
+        AuthError: {
+            code: string;
+            message: string;
+            details: components["schemas"]["AuthErrorDetails"];
         };
     };
     responses: never;
@@ -131,6 +275,265 @@ export interface operations {
                      *     }
                      */
                     "application/json": components["schemas"]["Readiness"];
+                };
+            };
+        };
+    };
+    authGetCsrf: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Успешно */
+            200: {
+                headers: {
+                    "Cache-Control"?: string;
+                    "Set-Cookie"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "csrf_token": "demo-csrf-token-placeholder"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["AuthCsrfOutput"];
+                };
+            };
+        };
+    };
+    authLogin: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Текущий token из GET /api/auth/csrf; после login cookie ротируется. */
+                "X-CSRFToken": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "username": "demo_anya",
+                 *       "password": "demo-user-placeholder"
+                 *     }
+                 */
+                "application/json": components["schemas"]["AuthLoginInput"];
+            };
+        };
+        responses: {
+            /** @description Успешно */
+            200: {
+                headers: {
+                    "Cache-Control"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "00000000-0000-4000-8000-000000000001",
+                     *       "username": "demo_anya",
+                     *       "role": "user",
+                     *       "is_demo": true
+                     *     }
+                     */
+                    "application/json": components["schemas"]["AuthUser"];
+                };
+            };
+            /** @description Некорректный запрос */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "validation_error",
+                     *       "message": "Демонстрационная ошибка без секретов.",
+                     *       "details": {}
+                     *     }
+                     */
+                    "application/json": components["schemas"]["AuthError"];
+                };
+            };
+            /** @description Нет сессии или неверные учётные данные */
+            401: {
+                headers: {
+                    "WWW-Authenticate"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "authentication_required",
+                     *       "message": "Демонстрационная ошибка без секретов.",
+                     *       "details": {}
+                     *     }
+                     */
+                    "application/json": components["schemas"]["AuthError"];
+                };
+            };
+            /** @description CSRF/доступ запрещён */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "permission_denied",
+                     *       "message": "Демонстрационная ошибка без секретов.",
+                     *       "details": {}
+                     *     }
+                     */
+                    "application/json": components["schemas"]["AuthError"];
+                };
+            };
+            /** @description Лимит попыток входа */
+            429: {
+                headers: {
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "throttled",
+                     *       "message": "Демонстрационная ошибка без секретов.",
+                     *       "details": {}
+                     *     }
+                     */
+                    "application/json": components["schemas"]["AuthError"];
+                };
+            };
+            /** @description Общий cache недоступен */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "auth_unavailable",
+                     *       "message": "Демонстрационная ошибка без секретов.",
+                     *       "details": {}
+                     *     }
+                     */
+                    "application/json": components["schemas"]["AuthError"];
+                };
+            };
+        };
+    };
+    authLogout: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Текущий token из GET /api/auth/csrf; после login cookie ротируется. */
+                "X-CSRFToken": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Успешно */
+            200: {
+                headers: {
+                    "Cache-Control"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": "logged_out"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["AuthLogoutOutput"];
+                };
+            };
+            /** @description Нет сессии или неверные учётные данные */
+            401: {
+                headers: {
+                    "WWW-Authenticate"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "authentication_required",
+                     *       "message": "Демонстрационная ошибка без секретов.",
+                     *       "details": {}
+                     *     }
+                     */
+                    "application/json": components["schemas"]["AuthError"];
+                };
+            };
+            /** @description CSRF/доступ запрещён */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "permission_denied",
+                     *       "message": "Демонстрационная ошибка без секретов.",
+                     *       "details": {}
+                     *     }
+                     */
+                    "application/json": components["schemas"]["AuthError"];
+                };
+            };
+        };
+    };
+    authGetMe: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Успешно */
+            200: {
+                headers: {
+                    "Cache-Control"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "00000000-0000-4000-8000-000000000001",
+                     *       "username": "demo_anya",
+                     *       "role": "user",
+                     *       "is_demo": true
+                     *     }
+                     */
+                    "application/json": components["schemas"]["AuthUser"];
+                };
+            };
+            /** @description Нет сессии или неверные учётные данные */
+            401: {
+                headers: {
+                    "WWW-Authenticate"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "authentication_required",
+                     *       "message": "Демонстрационная ошибка без секретов.",
+                     *       "details": {}
+                     *     }
+                     */
+                    "application/json": components["schemas"]["AuthError"];
                 };
             };
         };
