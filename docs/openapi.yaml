@@ -44,8 +44,8 @@ paths:
               example:
                 status: ready
                 checks:
-                  database: false
-                  redis: false
+                  database: true
+                  redis: true
         "503":
           description: Одна из зависимостей недоступна
           content:
@@ -53,9 +53,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/Readiness"
               example:
-                status: ready
+                status: not_ready
                 checks:
-                  database: false
+                  database: true
                   redis: false
   /api/cases:
     post:

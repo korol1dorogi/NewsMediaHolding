@@ -121,6 +121,13 @@ const expected = [
   'GET /api/health', 'GET /api/ready',
 ];
 const actual = new Set(operations.map((op) => op.label));
+for (const [code, reference] of Object.entries(spec.paths['/api/ready'].get.responses)) {
+  const media = dereference(reference).content?.['application/json'];
+  for (const example of examples(media || {})) {
+    const ready = example.checks?.database === true && example.checks?.redis === true;
+    check(code === '200' ? ready && example.status === 'ready' : !ready && example.status === 'not_ready', `Readiness ${code} example contradicts dependency checks`);
+  }
+}
 for (const label of expected) check(actual.has(label), `Missing required operation: ${label}`);
 check(new Set(operations.map((op) => op.operation.operationId)).size === operations.length, 'operationIds must be unique');
 const statesText = readFileSync(new URL('docs/state-machine.md', root), 'utf8');
