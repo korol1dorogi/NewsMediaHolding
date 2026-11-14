@@ -1,0 +1,20 @@
+[
+  {
+    "id": "consumer_services_refusal_32",
+    "article": "Закон РФ от 07.02.1992 № 2300-1, статья 32",
+    "title": "Отказ потребителя от договора оказания услуг",
+    "summary": "Потребитель вправе отказаться от договора при оплате фактически понесённых исполнителем расходов, связанных с исполнением обязательств.",
+    "conditions": ["consumer", "paid_service", "refusal"],
+    "url": "https://zpp.rospotrebnadzor.ru/npa/federal/192115",
+    "verified_by_lawyer": false
+  },
+  {
+    "id": "consumer_services_deadlines_31",
+    "article": "Закон РФ от 07.02.1992 № 2300-1, статья 31",
+    "title": "Срок удовлетворения отдельных требований потребителя",
+    "summary": "Для отдельных требований по статье 28 и пунктам 1 и 4 статьи 29 установлен десятидневный срок со дня предъявления требования; применимость к обстоятельствам проверяется отдельно.",
+    "conditions": ["consumer", "paid_service", "article_31_applicable"],
+    "url": "https://zpp.rospotrebnadzor.ru/npa/federal/192115",
+    "verified_by_lawyer": false
+  }
+]
