@@ -1,0 +1,5 @@
+# Test and lint tools. Pinned versions live in requirements-dev.txt.
+pytest>=8,<9
+pytest-django>=4.9,<5
+ruff>=0.12,<1
+pip-audit>=2.7,<3
