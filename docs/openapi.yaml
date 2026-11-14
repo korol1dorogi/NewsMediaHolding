@@ -1,0 +1,86 @@
+openapi: 3.1.0
+info:
+  title: Сервис обращений API
+  version: 0.1.0
+  description: |
+    Контракт API — источник правды. Клиент фронта генерируется из этого файла
+    (`npm run gen:api` в frontend/), мок поднимается Prism (`docker compose --profile mock up mock`).
+    Продуктовые эндпоинты добавляются задачами из docs/tasks.md.
+servers:
+  - url: /
+paths:
+  /api/health:
+    get:
+      operationId: getHealth
+      summary: Процесс жив
+      tags: [system]
+      security: []
+      responses:
+        "200":
+          description: Сервис работает
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+              example:
+                status: ok
+  /api/ready:
+    get:
+      operationId: getReady
+      summary: Сервис готов принимать трафик
+      tags: [system]
+      security: []
+      responses:
+        "200":
+          description: База данных и Redis доступны
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Readiness"
+              example:
+                status: ready
+                checks:
+                  database: true
+                  redis: true
+        "503":
+          description: Одна из зависимостей недоступна
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Readiness"
+              example:
+                status: not_ready
+                checks:
+                  database: true
+                  redis: false
+components:
+  securitySchemes:
+    session:
+      type: apiKey
+      in: cookie
+      name: sessionid
+  schemas:
+    Health:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [ok]
+    Readiness:
+      type: object
+      required: [status, checks]
+      properties:
+        status:
+          type: string
+          enum: [ready, not_ready]
+        checks:
+          type: object
+          required: [database, redis]
+          properties:
+            database:
+              type: boolean
+            redis:
+              type: boolean
+security:
+  - session: []
