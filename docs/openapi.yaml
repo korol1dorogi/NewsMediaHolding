@@ -1,11 +1,13 @@
 openapi: 3.1.0
 info:
   title: Сервис обращений API
-  version: 0.1.0
-  description: |
-    Контракт API — источник правды. Клиент фронта генерируется из этого файла
-    (`npm run gen:api` в frontend/), мок поднимается Prism (`docker compose --profile mock up mock`).
-    Продуктовые эндпоинты добавляются задачами из docs/tasks.md.
+  version: 1.0.0
+  description: >-
+    Контракт будущей реализации NMH, волны1–4. Системные endpoint уже существуют, продуктовые реализуют задачи
+    B1–B10. Примеры синтетические, Prism не реализует авторизацию/переходы. Сессии+CSRF, один origin; поля
+    владения/роли/оплаты/состояния задаёт сервер. /api/auth/* добавляет K2 в отдельной секции; K1 их не
+    реализует. Демо-ИНН 0000000000 —только sentinel fixture, запрещён для внешнего реестра. Денежные суммы в
+    копейках RUB.
 servers:
   - url: /
 paths:
@@ -13,7 +15,8 @@ paths:
     get:
       operationId: getHealth
       summary: Процесс жив
-      tags: [system]
+      tags:
+        - system
       security: []
       responses:
         "200":
@@ -28,7 +31,8 @@ paths:
     get:
       operationId: getReady
       summary: Сервис готов принимать трафик
-      tags: [system]
+      tags:
+        - system
       security: []
       responses:
         "200":
@@ -40,8 +44,8 @@ paths:
               example:
                 status: ready
                 checks:
-                  database: true
-                  redis: true
+                  database: false
+                  redis: false
         "503":
           description: Одна из зависимостей недоступна
           content:
@@ -49,10 +53,2411 @@ paths:
               schema:
                 $ref: "#/components/schemas/Readiness"
               example:
-                status: not_ready
+                status: ready
                 checks:
-                  database: true
+                  database: false
                   redis: false
+  /api/cases:
+    post:
+      operationId: createCase
+      tags:
+        - cases
+      summary: Создать обращение
+      description: >-
+        Создаёт обращение draft и первое сообщение с явным согласием. AI запускается асинхронно;
+        ai_state=thinking. В mock ответ — пример, не доказательство работающего backend.
+      parameters:
+        - name: X-CSRFToken
+          in: header
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            example: demo-csrf-token
+          description: Значение cookie csrftoken текущей сессии (K2). Не секретный пример.
+      responses:
+        "201":
+          description: Создано
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CaseDetail"
+              example:
+                id: 00000000-0000-4000-8000-000000000001
+                state: draft
+                path: null
+                ai_state: thinking
+                version: 1
+                created_at: "2026-11-15T10:00:00Z"
+                updated_at: "2026-11-15T10:00:00Z"
+                available_actions:
+                  - close_case
+                card_confirmed_at: null
+                pool: null
+                work: null
+        "400":
+          $ref: "#/components/responses/Error400"
+        "401":
+          $ref: "#/components/responses/Error401"
+        "403":
+          $ref: "#/components/responses/Error403"
+        "404":
+          $ref: "#/components/responses/Error404"
+        "409":
+          $ref: "#/components/responses/Error409"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCaseInput"
+            example:
+              message: Оплатила вымышленный курс, хочу вернуть деньги.
+              consent:
+                accepted: true
+                text_version: demo-v1
+    get:
+      operationId: listCases
+      tags:
+        - cases
+      summary: Свои обращения
+      description: >-
+        Контракт будущей реализации. Владелец/назначение и переход проверяются сервером; чужой объект — 404.
+        Состояние, роль, оплата и владелец не принимаются из запроса.
+      parameters: []
+      responses:
+        "200":
+          description: Успешно
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cases"
+              example:
+                items:
+                  - id: 00000000-0000-4000-8000-000000000001
+                    state: card_ready
+                    path: null
+                    ai_state: idle
+                    version: 2
+                    created_at: "2026-11-15T10:00:00Z"
+                    updated_at: "2026-11-15T10:00:00Z"
+                    available_actions:
+                      - confirm_card
+                      - close_case
+        "400":
+          $ref: "#/components/responses/Error400"
+        "401":
+          $ref: "#/components/responses/Error401"
+        "403":
+          $ref: "#/components/responses/Error403"
+        "404":
+          $ref: "#/components/responses/Error404"
+        "409":
+          $ref: "#/components/responses/Error409"
+  /api/cases/{id}:
+    get:
+      operationId: getCase
+      tags:
+        - cases
+      summary: Своё обращение и состояние AI
+      description: >-
+        Контракт будущей реализации. Владелец/назначение и переход проверяются сервером; чужой объект — 404.
+        Состояние, роль, оплата и владелец не принимаются из запроса.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            example: 00000000-0000-4000-8000-000000000001
+            format: uuid
+      responses:
+        "200":
+          description: Успешно
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CaseDetail"
+              example:
+                id: 00000000-0000-4000-8000-000000000001
+                state: work_submitted
+                path: specialist
+                ai_state: idle
+                version: 10
+                created_at: "2026-11-15T10:00:00Z"
+                updated_at: "2026-11-15T10:00:00Z"
+                available_actions:
+                  - accept_work
+                card_confirmed_at: "2026-11-15T09:00:00Z"
+                pool: null
+                work:
+                  version: 1
+                  text: Подготовлен демонстрационный пакет документов.
+                  submitted_at: "2026-11-15T10:00:00Z"
+        "400":
+          $ref: "#/components/responses/Error400"
+        "401":
+          $ref: "#/components/responses/Error401"
+        "403":
+          $ref: "#/components/responses/Error403"
+        "404":
+          $ref: "#/components/responses/Error404"
+        "409":
+          $ref: "#/components/responses/Error409"
+  /api/cases/{id}/messages:
+    get:
+      operationId: listMessages
+      tags:
+        - cases
+      summary: Диалог своего обращения
+      description: >-
+        Контракт будущей реализации. Владелец/назначение и переход проверяются сервером; чужой объект — 404.
+        Состояние, роль, оплата и владелец не принимаются из запроса.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            example: 00000000-0000-4000-8000-000000000001
+            format: uuid
+      responses:
+        "200":
+          description: Успешно
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Messages"
+              example:
+                items:
+                  - id: 00000000-0000-4000-8000-000000000002
+                    author: user
+                    text: Оплатила вымышленный курс 1 октября. Учебный проект Демо. Стоимость 68000 рублей.
+                    created_at: "2026-11-15T10:00:00Z"
+        "400":
+          $ref: "#/components/responses/Error400"
+        "401":
+          $ref: "#/components/responses/Error401"
+        "403":
+          $ref: "#/components/responses/Error403"
+        "404":
+          $ref: "#/components/responses/Error404"
+        "409":
+          $ref: "#/components/responses/Error409"
+    post:
+      operationId: sendMessage
+      tags:
+        - cases
+      summary: Отправить сообщение
+      description: >-
+        Только владелец в draft/clarifying, ai_state не thinking. Сохраняет сообщение, ставит Celery-задачу по
+        версии, возвращает thinking; опрос GET обращения/сообщений. После failed разрешена повторная отправка
+        текста как нового сообщения, старый источник не переписывается.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            example: 00000000-0000-4000-8000-000000000001
+            format: uuid
+        - name: X-CSRFToken
+          in: header
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            example: demo-csrf-token
+          description: Значение cookie csrftoken текущей сессии (K2). Не секретный пример.
+      responses:
+        "202":
+          description: Принято для асинхронной обработки
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageAccepted"
+              example:
+                message:
+                  id: 00000000-0000-4000-8000-000000000002
+                  author: user
+                  text: Оплатила вымышленный курс 1 октября. Учебный проект Демо. Стоимость 68000 рублей.
+                  created_at: "2026-11-15T10:00:00Z"
+                case:
+                  id: 00000000-0000-4000-8000-000000000001
+                  state: draft
+                  path: null
+                  ai_state: thinking
+                  version: 2
+                  created_at: "2026-11-15T10:00:00Z"
+                  updated_at: "2026-11-15T10:00:00Z"
+                  available_actions:
+                    - close_case
+        "400":
+          $ref: "#/components/responses/Error400"
+        "401":
+          $ref: "#/components/responses/Error401"
+        "403":
+          $ref: "#/components/responses/Error403"
+        "404":
+          $ref: "#/components/responses/Error404"
+        "409":
+          $ref: "#/components/responses/Error409"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MessageInput"
+            example:
+              text: Оплатила вымышленный курс 1 октября. Учебный проект Демо. Стоимость 68000 рублей.
+              expected_version: 1
+  /api/cases/{id}/documents:
+    post:
+      operationId: uploadDocument
+      tags:
+        - documents
+      summary: Загрузить документ
+      description: >-
+        Только владелец до подтверждения карточки. JPEG/PNG/UTF-8 text; содержимое проверяет S4. Ошибки
+        типа/размера/числа файлов — 400. После подтверждения —409. Лимиты задаст S4, замена исходников не
+        предусмотрена.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            example: 00000000-0000-4000-8000-000000000001
+            format: uuid
+        - name: X-CSRFToken
+          in: header
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            example: demo-csrf-token
+          description: Значение cookie csrftoken текущей сессии (K2). Не секретный пример.
+      responses:
+        "201":
+          description: Создано
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DocumentMetadata"
+              example:
+                id: 00000000-0000-4000-8000-000000000003
+                filename: demo-receipt.txt
+                content_type: text/plain
+                size_bytes: 128
+                created_at: "2026-11-15T10:00:00Z"
+        "400":
+          $ref: "#/components/responses/Error400"
+        "401":
+          $ref: "#/components/responses/Error401"
+        "403":
+          $ref: "#/components/responses/Error403"
+        "404":
+          $ref: "#/components/responses/Error404"
+        "409":
+          $ref: "#/components/responses/Error409"
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                - file
+                - expected_version
+              properties:
+                file:
+                  type: string
+                  format: binary
+                expected_version:
+                  $ref: "#/components/schemas/Version"
+            encoding:
+              file:
+                contentType: image/jpeg, image/png, text/plain
+            example:
+              file: Синтетический чек, только демонстрация.
+              expected_version: 1
+  /api/cases/{id}/documents/{docId}/content:
+    get:
+      operationId: downloadDocument
+      tags:
+        - documents
+      summary: Получить разрешённое содержимое документа
+      description: >-
+        Владелец либо текущий ведущий юрист. Проверяющий получает только подготовленную безопасную редакцию,
+        иначе404; подмена docId/родителя или истёкшее назначение —404. Никакого публичного storage URL. Пример
+        text/plain — синтетика.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            example: 00000000-0000-4000-8000-000000000001
+            format: uuid
+        - name: docId
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            example: 00000000-0000-4000-8000-000000000003
+            format: uuid
+      responses:
+        "200":
+          description: Разрешённое содержимое; MIME определяется проверенным файлом.
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+                example: attachment; filename="demo.txt"
+            X-Content-Type-Options:
+              schema:
+                type: string
+                const: nosniff
+                example: nosniff
+            Cache-Control:
+              schema:
+                type: string
+                example: private, no-store
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Демонстрационный чек без персональных данных.
+            image/png:
+              schema:
+                type: string
+                format: binary
+                description: "Байты проверенного PNG; синтетический текстовый mock используйте через Accept: text/plain."
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+                description: "Байты проверенного JPEG; синтетический текстовый mock используйте через Accept: text/plain."
+        "400":
+          $ref: "#/components/responses/Error400"
+        "401":
+          $ref: "#/components/responses/Error401"
+        "403":
+          $ref: "#/components/responses/Error403"
+        "404":
+          $ref: "#/components/responses/Error404"
+        "409":
+          $ref: "#/components/responses/Error409"
+  /api/cases/{id}/card:
+    get:
+      operationId: getCard
+      tags:
+        - card
+      summary: Карточка с цитатами
+      description: >-
+        Контракт будущей реализации. Владелец/назначение и переход проверяются сервером; чужой объект — 404.
+        Состояние, роль, оплата и владелец не принимаются из запроса.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            example: 00000000-0000-4000-8000-000000000001
+            format: uuid
+      responses:
+        "200":
+          description: Успешно
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Card"
+              example:
+                version: 1
+                confirmed_at: null
+                facts:
+                  - key: company_name
+                    value: Учебный проект Демо
+                    status: found
+                    source:
+                      kind: message
+                      id: 00000000-0000-4000-8000-000000000002
+                      source_version: 1
+                    source_quote: Учебный проект Демо
+                    required: true
+                  - key: payment_date
+                    value: null
+                    status: not_found
+                    source: null
+                    source_quote: null
+                    required: true
+                missing_required_fields:
+                  - payment_date
+        "400":
+          $ref: "#/components/responses/Error400"
+        "401":
+          $ref: "#/components/responses/Error401"
+        "403":
+          $ref: "#/components/responses/Error403"
+        "404":
+          $ref: "#/components/responses/Error404"
+        "409":
+          $ref: "#/components/responses/Error409"
+  /api/cases/{id}/card/facts/{key}:
+    patch:
+      operationId: editFact
+      tags:
+        - card
+      summary: Исправить факт
+      description: >-
+        Только владелец в card_ready; статус факта user_edited. После card_confirmed —409. Нельзя подменять
+        исходную цитату или источник через запрос.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            example: 00000000-0000-4000-8000-000000000001
+            format: uuid
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            example: company_name
+        - name: X-CSRFToken
+          in: header
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            example: demo-csrf-token
+          description: Значение cookie csrftoken текущей сессии (K2). Не секретный пример.
+      responses:
+        "200":
+          description: Успешно
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Card"
+              example:
+                version: 2
+                confirmed_at: null
+                facts:
+                  - key: company_name
+                    value: Учебный проект Демо
+                    status: user_edited
+                    source: null
+                    source_quote: null
+                    required: true
+                  - key: payment_date
+                    value: null
+                    status: not_found
+                    source: null
+                    source_quote: null
+                    required: true
+                missing_required_fields:
+                  - payment_date
+        "400":
+          $ref: "#/components/responses/Error400"
+        "401":
+          $ref: "#/components/responses/Error401"
+        "403":
+          $ref: "#/components/responses/Error403"
+        "404":
+          $ref: "#/components/responses/Error404"
+        "409":
+          $ref: "#/components/responses/Error409"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EditFactInput"
+            example:
+              value: Учебный проект Демо
+              expected_version: 1
+  /api/cases/{id}/card/confirm:
+    post:
+      operationId: confirmCard
+      tags:
+        - card
+      summary: Подтвердить версию карточки
+      description: >-
+        card_ready → card_confirmed, только при заполненных обязательных фактах. Неполнота/устаревшая версия
+        —409 с details.fields. Факты и ссылки на исходники замораживаются.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            example: 00000000-0000-4000-8000-000000000001
+            format: uuid
+        - name: X-CSRFToken
+          in: header
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            example: demo-csrf-token
+          description: Значение cookie csrftoken текущей сессии (K2). Не секретный пример.
+      responses:
+        "200":
+          description: Успешно
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CaseDetail"
+              example:
+                id: 00000000-0000-4000-8000-000000000001
+                state: card_confirmed
+                path: null
+                ai_state: idle
+                version: 3
+                created_at: "2026-11-15T10:00:00Z"
+                updated_at: "2026-11-15T10:00:00Z"
+                available_actions:
+                  - choose_path
+                  - close_case
+                card_confirmed_at: "2026-11-15T09:00:00Z"
+                pool: null
+                work: null
+        "400":
+          $ref: "#/components/responses/Error400"
+        "401":
+          $ref: "#/components/responses/Error401"
+        "403":
+          $ref: "#/components/responses/Error403"
+        "404":
+          $ref: "#/components/responses/Error404"
+        "409":
+          $ref: "#/components/responses/Error409"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConfirmCardInput"
+            example:
+              expected_version: 2
+              card_version: 2
+  /api/cases/{id}/company:
+    get:
+      operationId: getCompany
+      tags:
+        - guidance
+      summary: Проверка компании
+      description: >-
+        Контракт будущей реализации. Владелец/назначение и переход проверяются сервером; чужой объект — 404.
+        Состояние, роль, оплата и владелец не принимаются из запроса.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            example: 00000000-0000-4000-8000-000000000001
+            format: uuid
+      responses:
+        "200":
+          description: Успешно
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CompanyCheck"
+              example:
+                status: active
+                name: null
+                inn: null
+                registered_on: null
+                source: demo-fixture
+                checked_at: "2026-11-15T10:00:00Z"
+                is_demo: true
+        "400":
+          $ref: "#/components/responses/Error400"
+        "401":
+          $ref: "#/components/responses/Error401"
+        "403":
+          $ref: "#/components/responses/Error403"
+        "404":
+          $ref: "#/components/responses/Error404"
+        "409":
+          $ref: "#/components/responses/Error409"
+  /api/cases/{id}/paths:
+    get:
+      operationId: getPaths
+      tags:
+        - guidance
+      summary: Три доступных пути
+      description: >-
+        До подтверждения карточки409; claim доступен только active. При unavailable проверки компании путь не
+        блокирует self_guided; соответствующее объяснение обязательно.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            example: 00000000-0000-4000-8000-000000000001
+            format: uuid
+      responses:
+        "200":
+          description: Успешно
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Paths"
+              example:
+                items:
+                  - path: self_guided
+                    title: Реши сам
+                    available: true
+                    reason: null
+                    estimated_days: 1
+                    price_kopecks: 0
+                  - path: claim
+                    title: Официальный запрос
+                    available: true
+                    reason: null
+                    estimated_days: 1
+                    price_kopecks: 149000
+                  - path: specialist
+                    title: Обращение к специалисту
+                    available: true
+                    reason: null
+                    estimated_days: 2
+                    price_kopecks: null
+        "400":
+          $ref: "#/components/responses/Error400"
+        "401":
+          $ref: "#/components/responses/Error401"
+        "403":
+          $ref: "#/components/responses/Error403"
+        "404":
+          $ref: "#/components/responses/Error404"
+        "409":
+          $ref: "#/components/responses/Error409"
+  /api/cases/{id}/path:
+    post:
+      operationId: choosePath
+      tags:
+        - guidance
+      summary: Выбрать путь
+      description: >-
+        Владелец после подтверждения и по разрешённым переходам. specialist переводит в in_pool, но НЕ создаёт
+        и не публикует PoolCard. Для неё нужен отдельный POST /pool; повторный выбор не создаёт дубликатов.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            example: 00000000-0000-4000-8000-000000000001
+            format: uuid
+        - name: X-CSRFToken
+          in: header
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            example: demo-csrf-token
+          description: Значение cookie csrftoken текущей сессии (K2). Не секретный пример.
+      responses:
+        "200":
+          description: Успешно
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CaseDetail"
+              example:
+                id: 00000000-0000-4000-8000-000000000001
+                state: self_guided
+                path: self_guided
+                ai_state: idle
+                version: 4
+                created_at: "2026-11-15T10:00:00Z"
+                updated_at: "2026-11-15T10:00:00Z"
+                available_actions:
+                  - choose_path
+                  - close_case
+                card_confirmed_at: "2026-11-15T09:00:00Z"
+                pool: null
+                work: null
+        "400":
+          $ref: "#/components/responses/Error400"
+        "401":
+          $ref: "#/components/responses/Error401"
+        "403":
+          $ref: "#/components/responses/Error403"
+        "404":
+          $ref: "#/components/responses/Error404"
+        "409":
+          $ref: "#/components/responses/Error409"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PathInput"
+            example:
+              path: self_guided
+              expected_version: 3
+  /api/cases/{id}/plan:
+    get:
+      operationId: getPlan
+      tags:
+        - guidance
+      summary: План Реши сам
+      description: >-
+        Контракт будущей реализации. Владелец/назначение и переход проверяются сервером; чужой объект — 404.
+        Состояние, роль, оплата и владелец не принимаются из запроса.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            example: 00000000-0000-4000-8000-000000000001
+            format: uuid
+      responses:
+        "200":
+          description: Успешно
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SelfGuidedPlan"
+              example:
+                version: 1
+                steps:
+                  - order: 1
+                    text: Сохраните подтверждение оплаты.
+                    due_on: null
+                    documents:
+                      - Чек
+                    destination: Демонстрационная компания
+                    norms:
+                      - id: demo-rule-1
+                        title: Демонстрационное правило
+                        url: https://example.invalid/demo-rule
+                        verified_by_lawyer: false
+                disclaimer: Не является юридической консультацией. Демонстрационные нормы не проверены юристом.
+        "400":
+          $ref: "#/components/responses/Error400"
+        "401":
+          $ref: "#/components/responses/Error401"
+        "403":
+          $ref: "#/components/responses/Error403"
+        "404":
+          $ref: "#/components/responses/Error404"
+        "409":
+          $ref: "#/components/responses/Error409"
+  /api/cases/{id}/claim:
+    post:
+      operationId: createClaim
+      tags:
+        - claims
+      summary: Создать черновик претензии
+      description: >-
+        claim_draft и подтверждённая карточка. Асинхронный draft_claim; GET обращения показывает ai_state, GET
+        claim —готовую версию; до готовности GET claim возвращает409.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            example: 00000000-0000-4000-8000-000000000001
+            format: uuid
+        - name: X-CSRFToken
+          in: header
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            example: demo-csrf-token
+          description: Значение cookie csrftoken текущей сессии (K2). Не секретный пример.
+      responses:
+        "202":
+          description: Принято для асинхронной обработки
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClaimAccepted"
+              example:
+                claim_id: 00000000-0000-4000-8000-000000000004
+                case:
+                  id: 00000000-0000-4000-8000-000000000001
+                  state: claim_draft
+                  path: claim
+                  ai_state: thinking
+                  version: 4
+                  created_at: "2026-11-15T10:00:00Z"
+                  updated_at: "2026-11-15T10:00:00Z"
+                  available_actions: []
+        "400":
+          $ref: "#/components/responses/Error400"
+        "401":
+          $ref: "#/components/responses/Error401"
+        "403":
+          $ref: "#/components/responses/Error403"
+        "404":
+          $ref: "#/components/responses/Error404"
+        "409":
+          $ref: "#/components/responses/Error409"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VersionInput"
+            example:
+              expected_version: 3
+    get:
+      operationId: getClaim
+      tags:
+        - claims
+      summary: Своя претензия и версии
+      description: >-
+        Контракт будущей реализации. Владелец/назначение и переход проверяются сервером; чужой объект — 404.
+        Состояние, роль, оплата и владелец не принимаются из запроса.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            example: 00000000-0000-4000-8000-000000000001
+            format: uuid
+      responses:
+        "200":
+          description: Успешно
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Claim"
+              example:
+                id: 00000000-0000-4000-8000-000000000004
+                case_id: 00000000-0000-4000-8000-000000000001
+                case_version: 3
+                current_version: 1
+                versions:
+                  - version: 1
+                    author: ai
+                    text: "Демонстрационная претензия по вымышленному курсу. Заявитель: Демо Пользователь."
+                    comment: null
+                    created_at: "2026-11-15T10:00:00Z"
+                personal_data:
+                  full_name: Демо Пользователь
+                  reply_address: Вымышленный город, учебный адрес
+                  contract_reference: DEMO-CONTRACT-1
+                personal_data_confirmed: true
+                faulty: false
+                submitted_at: null
+                sent_on: null
+                response_due_on: null
+                available_actions:
+                  - submit_claim
+        "400":
+          $ref: "#/components/responses/Error400"
+        "401":
+          $ref: "#/components/responses/Error401"
+        "403":
+          $ref: "#/components/responses/Error403"
+        "404":
+          $ref: "#/components/responses/Error404"
+        "409":
+          $ref: "#/components/responses/Error409"
+  /api/cases/{id}/claim/personal-data:
+    put:
+      operationId: confirmPersonalData
+      tags:
+        - claims
+      summary: Подтвердить персональные данные
+      description: >-
+        Контракт будущей реализации. Владелец/назначение и переход проверяются сервером; чужой объект — 404.
+        Состояние, роль, оплата и владелец не принимаются из запроса.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            example: 00000000-0000-4000-8000-000000000001
+            format: uuid
+        - name: X-CSRFToken
+          in: header
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            example: demo-csrf-token
+          description: Значение cookie csrftoken текущей сессии (K2). Не секретный пример.
+      responses:
+        "200":
+          description: Успешно
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Claim"
+              example:
+                id: 00000000-0000-4000-8000-000000000004
+                case_id: 00000000-0000-4000-8000-000000000001
+                case_version: 3
+                current_version: 1
+                versions:
+                  - version: 1
+                    author: ai
+                    text: "Демонстрационная претензия по вымышленному курсу. Заявитель: Демо Пользователь."
+                    comment: null
+                    created_at: "2026-11-15T10:00:00Z"
+                personal_data:
+                  full_name: Демо Пользователь
+                  reply_address: Вымышленный город, учебный адрес
+                  contract_reference: DEMO-CONTRACT-1
+                personal_data_confirmed: true
+                faulty: false
+                submitted_at: null
+                sent_on: null
+                response_due_on: null
+                available_actions:
+                  - submit_claim
+        "400":
+          $ref: "#/components/responses/Error400"
+        "401":
+          $ref: "#/components/responses/Error401"
+        "403":
+          $ref: "#/components/responses/Error403"
+        "404":
+          $ref: "#/components/responses/Error404"
+        "409":
+          $ref: "#/components/responses/Error409"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PersonalDataInput"
+            example:
+              expected_version: 1
+              data:
+                full_name: Демо Пользователь
+                reply_address: Вымышленный город, учебный адрес
+                contract_reference: DEMO-CONTRACT-1
+              confirmed: true
+  /api/cases/{id}/claim/submit:
+    post:
+      operationId: submitClaim
+      tags:
+        - claims
+      summary: Передать на проверку
+      description: >-
+        Подтверждённая версия и ПД, явное согласие. Полный контракт волн3–4 создаёт demo hold сервером до
+        claim_in_review; P0 без B6/B8 не раскрывает данные реальному юристу (этапность в decisions). Клиент не
+        задаёт paid/hold/state.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            example: 00000000-0000-4000-8000-000000000001
+            format: uuid
+        - name: X-CSRFToken
+          in: header
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            example: demo-csrf-token
+          description: Значение cookie csrftoken текущей сессии (K2). Не секретный пример.
+      responses:
+        "200":
+          description: Успешно
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CaseDetail"
+              example:
+                id: 00000000-0000-4000-8000-000000000001
+                state: claim_in_review
+                path: claim
+                ai_state: idle
+                version: 4
+                created_at: "2026-11-15T10:00:00Z"
+                updated_at: "2026-11-15T10:00:00Z"
+                available_actions:
+                  - close_case
+                card_confirmed_at: "2026-11-15T09:00:00Z"
+                pool: null
+                work: null
+        "400":
+          $ref: "#/components/responses/Error400"
+        "401":
+          $ref: "#/components/responses/Error401"
+        "403":
+          $ref: "#/components/responses/Error403"
+        "404":
+          $ref: "#/components/responses/Error404"
+        "409":
+          $ref: "#/components/responses/Error409"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubmitClaimInput"
+            example:
+              expected_version: 3
+              claim_version: 1
+              consent:
+                accepted: true
+                text_version: demo-v1
+  /api/cases/{id}/claim/accept-edits:
+    post:
+      operationId: acceptClaimEdits
+      tags:
+        - claims
+      summary: Принять конкретную правку
+      description: >-
+        Контракт будущей реализации. Владелец/назначение и переход проверяются сервером; чужой объект — 404.
+        Состояние, роль, оплата и владелец не принимаются из запроса.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            example: 00000000-0000-4000-8000-000000000001
+            format: uuid
+        - name: X-CSRFToken
+          in: header
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            example: demo-csrf-token
+          description: Значение cookie csrftoken текущей сессии (K2). Не секретный пример.
+      responses:
+        "200":
+          description: Успешно
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CaseDetail"
+              example:
+                id: 00000000-0000-4000-8000-000000000001
+                state: claim_approved
+                path: claim
+                ai_state: idle
+                version: 6
+                created_at: "2026-11-15T10:00:00Z"
+                updated_at: "2026-11-15T10:00:00Z"
+                available_actions:
+                  - mark_sent
+                  - close_case
+                card_confirmed_at: "2026-11-15T09:00:00Z"
+                pool: null
+                work: null
+        "400":
+          $ref: "#/components/responses/Error400"
+        "401":
+          $ref: "#/components/responses/Error401"
+        "403":
+          $ref: "#/components/responses/Error403"
+        "404":
+          $ref: "#/components/responses/Error404"
+        "409":
+          $ref: "#/components/responses/Error409"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClaimVersionInput"
+            example:
+              expected_version: 5
+              claim_version: 1
+  /api/cases/{id}/claim/reject-edits:
+    post:
+      operationId: rejectClaimEdits
+      tags:
+        - claims
+      summary: Вернуть правку с комментарием
+      description: >-
+        Контракт будущей реализации. Владелец/назначение и переход проверяются сервером; чужой объект — 404.
+        Состояние, роль, оплата и владелец не принимаются из запроса.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            example: 00000000-0000-4000-8000-000000000001
+            format: uuid
+        - name: X-CSRFToken
+          in: header
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            example: demo-csrf-token
+          description: Значение cookie csrftoken текущей сессии (K2). Не секретный пример.
+      responses:
+        "200":
+          description: Успешно
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CaseDetail"
+              example:
+                id: 00000000-0000-4000-8000-000000000001
+                state: claim_in_review
+                path: claim
+                ai_state: idle
+                version: 6
+                created_at: "2026-11-15T10:00:00Z"
+                updated_at: "2026-11-15T10:00:00Z"
+                available_actions:
+                  - close_case
+                card_confirmed_at: "2026-11-15T09:00:00Z"
+                pool: null
+                work: null
+        "400":
+          $ref: "#/components/responses/Error400"
+        "401":
+          $ref: "#/components/responses/Error401"
+        "403":
+          $ref: "#/components/responses/Error403"
+        "404":
+          $ref: "#/components/responses/Error404"
+        "409":
+          $ref: "#/components/responses/Error409"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RejectEditsInput"
+            example:
+              expected_version: 5
+              claim_version: 1
+              comment: Уточните основание требования.
+  /api/cases/{id}/claim/mark-sent:
+    post:
+      operationId: markClaimSent
+      tags:
+        - claims
+      summary: Отметить отправку
+      description: >-
+        Контракт будущей реализации. Владелец/назначение и переход проверяются сервером; чужой объект — 404.
+        Состояние, роль, оплата и владелец не принимаются из запроса.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            example: 00000000-0000-4000-8000-000000000001
+            format: uuid
+        - name: X-CSRFToken
+          in: header
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            example: demo-csrf-token
+          description: Значение cookie csrftoken текущей сессии (K2). Не секретный пример.
+      responses:
+        "200":
+          description: Успешно
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CaseDetail"
+              example:
+                id: 00000000-0000-4000-8000-000000000001
+                state: awaiting_response
+                path: claim
+                ai_state: idle
+                version: 7
+                created_at: "2026-11-15T10:00:00Z"
+                updated_at: "2026-11-15T10:00:00Z"
+                available_actions:
+                  - record_outcome
+                  - close_case
+                card_confirmed_at: "2026-11-15T09:00:00Z"
+                pool: null
+                work: null
+        "400":
+          $ref: "#/components/responses/Error400"
+        "401":
+          $ref: "#/components/responses/Error401"
+        "403":
+          $ref: "#/components/responses/Error403"
+        "404":
+          $ref: "#/components/responses/Error404"
+        "409":
+          $ref: "#/components/responses/Error409"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MarkSentInput"
+            example:
+              expected_version: 6
+              claim_version: 1
+              sent_on: "2026-11-15"
+  /api/cases/{id}/claim/outcome:
+    post:
+      operationId: recordClaimOutcome
+      tags:
+        - claims
+      summary: Отметить исход
+      description: >-
+        Контракт будущей реализации. Владелец/назначение и переход проверяются сервером; чужой объект — 404.
+        Состояние, роль, оплата и владелец не принимаются из запроса.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            example: 00000000-0000-4000-8000-000000000001
+            format: uuid
+        - name: X-CSRFToken
+          in: header
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            example: demo-csrf-token
+          description: Значение cookie csrftoken текущей сессии (K2). Не секретный пример.
+      responses:
+        "200":
+          description: Успешно
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CaseDetail"
+              example:
+                id: 00000000-0000-4000-8000-000000000001
+                state: resolved
+                path: claim
+                ai_state: idle
+                version: 8
+                created_at: "2026-11-15T10:00:00Z"
+                updated_at: "2026-11-15T10:00:00Z"
+                available_actions:
+                  - close_case
+                card_confirmed_at: "2026-11-15T09:00:00Z"
+                pool: null
+                work: null
+        "400":
+          $ref: "#/components/responses/Error400"
+        "401":
+          $ref: "#/components/responses/Error401"
+        "403":
+          $ref: "#/components/responses/Error403"
+        "404":
+          $ref: "#/components/responses/Error404"
+        "409":
+          $ref: "#/components/responses/Error409"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OutcomeInput"
+            example:
+              expected_version: 7
+              outcome: resolved
+              comment: Демонстрационный результат.
+  /api/lawyer/claims:
+    get:
+      operationId: listReviewQueue
+      tags:
+        - review
+      summary: Общая очередь без контактов
+      description: Только lawyer. Свободные claim_in_review; закрытая схема без owner_id, текста, ПД, источников/файлов.
+      parameters: []
+      responses:
+        "200":
+          description: Успешно
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReviewQueue"
+              example:
+                items:
+                  - id: 00000000-0000-4000-8000-000000000004
+                    category: education
+                    amount_kopecks: 6800000
+                    queued_at: "2026-11-15T10:00:00Z"
+                    case_version: 4
+        "400":
+          $ref: "#/components/responses/Error400"
+        "401":
+          $ref: "#/components/responses/Error401"
+        "403":
+          $ref: "#/components/responses/Error403"
+        "404":
+          $ref: "#/components/responses/Error404"
+        "409":
+          $ref: "#/components/responses/Error409"
+  /api/lawyer/claims/{id}/take:
+    post:
+      operationId: takeClaim
+      tags:
+        - review
+      summary: Атомарно взять претензию
+      description: >-
+        Свободная претензия, действующее основание и demo hold; запрет виновному faulty-юристу. Второй take
+        —409; таймаут4ч.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            example: 00000000-0000-4000-8000-000000000004
+            format: uuid
+        - name: X-CSRFToken
+          in: header
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            example: demo-csrf-token
+          description: Значение cookie csrftoken текущей сессии (K2). Не секретный пример.
+      responses:
+        "200":
+          description: Успешно
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReviewClaim"
+              example:
+                id: 00000000-0000-4000-8000-000000000004
+                case_id: 00000000-0000-4000-8000-000000000001
+                case_version: 5
+                assignment_version: 1
+                assignment_expires_at: "2026-11-15T14:00:00Z"
+                version:
+                  version: 1
+                  template_text: Заявитель {{claimant}} просит вернуть стоимость курса. Ответ направить {{reply_address}}.
+                  comment: null
+                facts:
+                  - key: amount_kopecks
+                    display_value: 68000 рублей
+                    safe_source_quote: Стоимость курса 68000 рублей.
+                documents:
+                  - id: 00000000-0000-4000-8000-000000000003
+                    label: Маскированный демонстрационный чек
+                    content_type: text/plain
+                    safe_redaction_available: true
+                available_actions:
+                  - approve_claim
+                  - edit_claim
+        "400":
+          $ref: "#/components/responses/Error400"
+        "401":
+          $ref: "#/components/responses/Error401"
+        "403":
+          $ref: "#/components/responses/Error403"
+        "404":
+          $ref: "#/components/responses/Error404"
+        "409":
+          $ref: "#/components/responses/Error409"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TakeClaimInput"
+            example:
+              expected_version: 4
+  /api/lawyer/claims/{id}:
+    get:
+      operationId: getReviewClaim
+      tags:
+        - review
+      summary: Материалы своей проверки
+      description: >-
+        Только текущее назначение, срок не истёк. Контакты запрещены product10.5: безопасный template_text с
+        placeholders и очищенные факты; только безопасные редакции документов, оригиналы при отсутствии
+        redaction не выдаются.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            example: 00000000-0000-4000-8000-000000000004
+            format: uuid
+      responses:
+        "200":
+          description: Успешно
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReviewClaim"
+              example:
+                id: 00000000-0000-4000-8000-000000000004
+                case_id: 00000000-0000-4000-8000-000000000001
+                case_version: 5
+                assignment_version: 1
+                assignment_expires_at: "2026-11-15T14:00:00Z"
+                version:
+                  version: 1
+                  template_text: Заявитель {{claimant}} просит вернуть стоимость курса. Ответ направить {{reply_address}}.
+                  comment: null
+                facts:
+                  - key: amount_kopecks
+                    display_value: 68000 рублей
+                    safe_source_quote: Стоимость курса 68000 рублей.
+                documents:
+                  - id: 00000000-0000-4000-8000-000000000003
+                    label: Маскированный демонстрационный чек
+                    content_type: text/plain
+                    safe_redaction_available: true
+                available_actions:
+                  - approve_claim
+                  - edit_claim
+        "400":
+          $ref: "#/components/responses/Error400"
+        "401":
+          $ref: "#/components/responses/Error401"
+        "403":
+          $ref: "#/components/responses/Error403"
+        "404":
+          $ref: "#/components/responses/Error404"
+        "409":
+          $ref: "#/components/responses/Error409"
+  /api/lawyer/claims/{id}/approve:
+    post:
+      operationId: approveClaim
+      tags:
+        - review
+      summary: Утвердить проверяемую версию
+      description: >-
+        Контракт будущей реализации. Владелец/назначение и переход проверяются сервером; чужой объект — 404.
+        Состояние, роль, оплата и владелец не принимаются из запроса.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            example: 00000000-0000-4000-8000-000000000004
+            format: uuid
+        - name: X-CSRFToken
+          in: header
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            example: demo-csrf-token
+          description: Значение cookie csrftoken текущей сессии (K2). Не секретный пример.
+      responses:
+        "200":
+          description: Успешно
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CaseSummary"
+              example:
+                id: 00000000-0000-4000-8000-000000000001
+                state: claim_approved
+                path: claim
+                ai_state: idle
+                version: 6
+                created_at: "2026-11-15T10:00:00Z"
+                updated_at: "2026-11-15T10:00:00Z"
+                available_actions: []
+        "400":
+          $ref: "#/components/responses/Error400"
+        "401":
+          $ref: "#/components/responses/Error401"
+        "403":
+          $ref: "#/components/responses/Error403"
+        "404":
+          $ref: "#/components/responses/Error404"
+        "409":
+          $ref: "#/components/responses/Error409"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReviewActionInput"
+            example:
+              expected_version: 5
+              assignment_version: 1
+              claim_version: 1
+  /api/lawyer/claims/{id}/edit:
+    post:
+      operationId: editClaim
+      tags:
+        - review
+      summary: Исправить шаблон с комментарием
+      description: >-
+        Контракт будущей реализации. Владелец/назначение и переход проверяются сервером; чужой объект — 404.
+        Состояние, роль, оплата и владелец не принимаются из запроса.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            example: 00000000-0000-4000-8000-000000000004
+            format: uuid
+        - name: X-CSRFToken
+          in: header
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            example: demo-csrf-token
+          description: Значение cookie csrftoken текущей сессии (K2). Не секретный пример.
+      responses:
+        "200":
+          description: Успешно
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CaseSummary"
+              example:
+                id: 00000000-0000-4000-8000-000000000001
+                state: claim_edited
+                path: claim
+                ai_state: idle
+                version: 6
+                created_at: "2026-11-15T10:00:00Z"
+                updated_at: "2026-11-15T10:00:00Z"
+                available_actions: []
+        "400":
+          $ref: "#/components/responses/Error400"
+        "401":
+          $ref: "#/components/responses/Error401"
+        "403":
+          $ref: "#/components/responses/Error403"
+        "404":
+          $ref: "#/components/responses/Error404"
+        "409":
+          $ref: "#/components/responses/Error409"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReviewEditInput"
+            example:
+              expected_version: 5
+              assignment_version: 1
+              claim_version: 1
+              template_text: Заявитель {{claimant}} требует возврата стоимости курса.
+              comment: Уточнено требование.
+  /api/cases/{id}/pool:
+    post:
+      operationId: publishPool
+      tags:
+        - pool
+      summary: Подготовить карточку к модерации
+      description: >-
+        Только выбранный specialist/in_pool. Одна активная PoolCard на Case: повтор того же snapshot
+        возвращает ту же запись без повторной публикации. Очистка →сканер →pending; только модератор делает
+        approved, никакой автоматической публикации. GET Case.pool показывает статус.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            example: 00000000-0000-4000-8000-000000000001
+            format: uuid
+        - name: X-CSRFToken
+          in: header
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            example: demo-csrf-token
+          description: Значение cookie csrftoken текущей сессии (K2). Не секретный пример.
+      responses:
+        "202":
+          description: Принято для асинхронной обработки
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OwnerPoolStatus"
+              example:
+                id: 00000000-0000-4000-8000-000000000005
+                moderation_status: pending
+                rejection_reason: null
+        "400":
+          $ref: "#/components/responses/Error400"
+        "401":
+          $ref: "#/components/responses/Error401"
+        "403":
+          $ref: "#/components/responses/Error403"
+        "404":
+          $ref: "#/components/responses/Error404"
+        "409":
+          $ref: "#/components/responses/Error409"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConsentVersionInput"
+            example:
+              expected_version: 1
+              consent:
+                accepted: true
+                text_version: demo-v1
+  /api/lawyer/pool:
+    get:
+      operationId: listPool
+      tags:
+        - pool
+      summary: Обезличенный пул
+      description: Только lawyer, только approved; без ссылок на Case/Fact/Document и без ПД.
+      parameters:
+        - name: category
+          in: query
+          schema:
+            type: string
+            minLength: 1
+            example: education
+        - name: city
+          in: query
+          schema:
+            type: string
+            minLength: 1
+            example: Вымышленный город
+        - name: min_kopecks
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            example: 6800000
+        - name: max_kopecks
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            example: 6800000
+      responses:
+        "200":
+          description: Успешно
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PoolCards"
+              example:
+                items:
+                  - id: 00000000-0000-4000-8000-000000000005
+                    category: education
+                    description: Потребитель требует возврата оплаты за вымышленный курс.
+                    city: Вымышленный город
+                    amount_range:
+                      min_kopecks: 5000000
+                      max_kopecks: 10000000
+                    company:
+                      name: Учебный проект Демо
+                      status: active
+                    actions_taken:
+                      - Претензия отправлена, ответа нет.
+                    similar_cases:
+                      count: 34
+                      cities_count: 5
+                      period_months: 12
+        "400":
+          $ref: "#/components/responses/Error400"
+        "401":
+          $ref: "#/components/responses/Error401"
+        "403":
+          $ref: "#/components/responses/Error403"
+        "404":
+          $ref: "#/components/responses/Error404"
+        "409":
+          $ref: "#/components/responses/Error409"
+  /api/lawyer/pool/{id}:
+    get:
+      operationId: getPoolCard
+      tags:
+        - pool
+      summary: Обезличенная карточка
+      description: >-
+        Контракт будущей реализации. Владелец/назначение и переход проверяются сервером; чужой объект — 404.
+        Состояние, роль, оплата и владелец не принимаются из запроса.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            example: 00000000-0000-4000-8000-000000000005
+            format: uuid
+      responses:
+        "200":
+          description: Успешно
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PoolCard"
+              example:
+                id: 00000000-0000-4000-8000-000000000005
+                category: education
+                description: Потребитель требует возврата оплаты за вымышленный курс.
+                city: Вымышленный город
+                amount_range:
+                  min_kopecks: 5000000
+                  max_kopecks: 10000000
+                company:
+                  name: Учебный проект Демо
+                  status: active
+                actions_taken:
+                  - Претензия отправлена, ответа нет.
+                similar_cases:
+                  count: 34
+                  cities_count: 5
+                  period_months: 12
+        "400":
+          $ref: "#/components/responses/Error400"
+        "401":
+          $ref: "#/components/responses/Error401"
+        "403":
+          $ref: "#/components/responses/Error403"
+        "404":
+          $ref: "#/components/responses/Error404"
+        "409":
+          $ref: "#/components/responses/Error409"
+  /api/lawyer/pool/{id}/offers:
+    post:
+      operationId: createOffer
+      tags:
+        - pool
+      summary: Отправить предложение
+      description: >-
+        Один lawyer —одно Offer на PoolCard, окно48ч. Проверявший претензию может предложить лишь при
+        отсутствии faulty и отказе/нет ответа; нарушение409.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            example: 00000000-0000-4000-8000-000000000005
+            format: uuid
+        - name: X-CSRFToken
+          in: header
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            example: demo-csrf-token
+          description: Значение cookie csrftoken текущей сессии (K2). Не секретный пример.
+      responses:
+        "201":
+          description: Создано
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Offer"
+              example:
+                id: 00000000-0000-4000-8000-000000000006
+                lawyer_label: Демо-юрист
+                scope: Подготовка документов
+                duration_days: 7
+                price_kopecks: 1200000
+                included:
+                  - Подготовка документов
+                excluded:
+                  - Представительство
+                accepted: false
+                created_at: "2026-11-15T10:00:00Z"
+        "400":
+          $ref: "#/components/responses/Error400"
+        "401":
+          $ref: "#/components/responses/Error401"
+        "403":
+          $ref: "#/components/responses/Error403"
+        "404":
+          $ref: "#/components/responses/Error404"
+        "409":
+          $ref: "#/components/responses/Error409"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OfferInput"
+            example:
+              scope: Подготовлю документы по вымышленному делу.
+              duration_days: 7
+              price_kopecks: 1200000
+              included:
+                - Подготовка документов
+              excluded:
+                - Представительство в суде
+  /api/cases/{id}/offers:
+    get:
+      operationId: listOffers
+      tags:
+        - pool
+      summary: Предложения своего обращения
+      description: Владелец видит максимум5 предложений по внутреннему рейтингу; сам рейтинг не выдаётся.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            example: 00000000-0000-4000-8000-000000000001
+            format: uuid
+      responses:
+        "200":
+          description: Успешно
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Offers"
+              example:
+                items:
+                  - id: 00000000-0000-4000-8000-000000000006
+                    lawyer_label: Демо-юрист
+                    scope: Подготовка документов
+                    duration_days: 7
+                    price_kopecks: 1200000
+                    included:
+                      - Подготовка документов
+                    excluded:
+                      - Представительство
+                    accepted: false
+                    created_at: "2026-11-15T10:00:00Z"
+        "400":
+          $ref: "#/components/responses/Error400"
+        "401":
+          $ref: "#/components/responses/Error401"
+        "403":
+          $ref: "#/components/responses/Error403"
+        "404":
+          $ref: "#/components/responses/Error404"
+        "409":
+          $ref: "#/components/responses/Error409"
+  /api/cases/{id}/offers/{offerId}/accept:
+    post:
+      operationId: acceptOffer
+      tags:
+        - pool
+      summary: Выбрать единственного исполнителя
+      description: >-
+        has_offers, Offer относится к этому Case, явное согласие, server-side demo hold; атомарно выбирает
+        одного юриста. Повтор/гонка второго принятия409.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            example: 00000000-0000-4000-8000-000000000001
+            format: uuid
+        - name: offerId
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            example: 00000000-0000-4000-8000-000000000006
+            format: uuid
+        - name: X-CSRFToken
+          in: header
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            example: demo-csrf-token
+          description: Значение cookie csrftoken текущей сессии (K2). Не секретный пример.
+      responses:
+        "200":
+          description: Успешно
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CaseDetail"
+              example:
+                id: 00000000-0000-4000-8000-000000000001
+                state: offer_accepted
+                path: specialist
+                ai_state: idle
+                version: 8
+                created_at: "2026-11-15T10:00:00Z"
+                updated_at: "2026-11-15T10:00:00Z"
+                available_actions: []
+                card_confirmed_at: "2026-11-15T09:00:00Z"
+                pool: null
+                work: null
+        "400":
+          $ref: "#/components/responses/Error400"
+        "401":
+          $ref: "#/components/responses/Error401"
+        "403":
+          $ref: "#/components/responses/Error403"
+        "404":
+          $ref: "#/components/responses/Error404"
+        "409":
+          $ref: "#/components/responses/Error409"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConsentVersionInput"
+            example:
+              expected_version: 7
+              consent:
+                accepted: true
+                text_version: demo-v1
+  /api/lawyer/cases:
+    get:
+      operationId: listLawyerCases
+      tags:
+        - work
+      summary: Закреплённые дела
+      description: >-
+        Контракт будущей реализации. Владелец/назначение и переход проверяются сервером; чужой объект — 404.
+        Состояние, роль, оплата и владелец не принимаются из запроса.
+      parameters: []
+      responses:
+        "200":
+          description: Успешно
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LawyerCases"
+              example:
+                items:
+                  - id: 00000000-0000-4000-8000-000000000001
+                    state: offer_accepted
+                    path: specialist
+                    ai_state: idle
+                    version: 8
+                    created_at: "2026-11-15T10:00:00Z"
+                    updated_at: "2026-11-15T10:00:00Z"
+                    available_actions:
+                      - start_work
+        "400":
+          $ref: "#/components/responses/Error400"
+        "401":
+          $ref: "#/components/responses/Error401"
+        "403":
+          $ref: "#/components/responses/Error403"
+        "404":
+          $ref: "#/components/responses/Error404"
+        "409":
+          $ref: "#/components/responses/Error409"
+  /api/lawyer/cases/{id}:
+    get:
+      operationId: getLawyerCase
+      tags:
+        - work
+      summary: Данные закреплённого дела
+      description: >-
+        Только выбранный юрист после согласия/hold в offer_accepted, in_progress, work_submitted. До
+        выбора/при потере назначения404. Доступ после окончания не расширяется до согласования правил.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            example: 00000000-0000-4000-8000-000000000001
+            format: uuid
+      responses:
+        "200":
+          description: Успешно
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LawyerCase"
+              example:
+                case:
+                  id: 00000000-0000-4000-8000-000000000001
+                  state: offer_accepted
+                  path: specialist
+                  ai_state: idle
+                  version: 8
+                  created_at: "2026-11-15T10:00:00Z"
+                  updated_at: "2026-11-15T10:00:00Z"
+                  available_actions:
+                    - start_work
+                card:
+                  version: 2
+                  confirmed_at: "2026-11-15T09:00:00Z"
+                  facts:
+                    - key: company_name
+                      value: Учебный проект Демо
+                      status: found
+                      source:
+                        kind: message
+                        id: 00000000-0000-4000-8000-000000000002
+                        source_version: 1
+                      source_quote: Учебный проект Демо
+                      required: true
+                    - key: payment_date
+                      value: "2026-10-01"
+                      status: user_edited
+                      source: null
+                      source_quote: null
+                      required: true
+                  missing_required_fields: []
+                personal_data:
+                  full_name: Демо Пользователь
+                  reply_address: Вымышленный город, учебный адрес
+                  contract_reference: DEMO-CONTRACT-1
+                documents:
+                  - id: 00000000-0000-4000-8000-000000000003
+                    filename: demo-receipt.txt
+                    content_type: text/plain
+                    size_bytes: 128
+                    created_at: "2026-11-15T10:00:00Z"
+                claim:
+                  id: 00000000-0000-4000-8000-000000000004
+                  case_id: 00000000-0000-4000-8000-000000000001
+                  case_version: 3
+                  current_version: 1
+                  versions:
+                    - version: 1
+                      author: ai
+                      text: "Демонстрационная претензия по вымышленному курсу. Заявитель: Демо Пользователь."
+                      comment: null
+                      created_at: "2026-11-15T10:00:00Z"
+                  personal_data:
+                    full_name: Демо Пользователь
+                    reply_address: Вымышленный город, учебный адрес
+                    contract_reference: DEMO-CONTRACT-1
+                  personal_data_confirmed: true
+                  faulty: false
+                  submitted_at: null
+                  sent_on: null
+                  response_due_on: null
+                  available_actions:
+                    - submit_claim
+                accepted_offer:
+                  id: 00000000-0000-4000-8000-000000000006
+                  lawyer_label: Демо-юрист
+                  scope: Подготовка документов
+                  duration_days: 7
+                  price_kopecks: 1200000
+                  included:
+                    - Подготовка документов
+                  excluded:
+                    - Представительство
+                  accepted: true
+                  created_at: "2026-11-15T10:00:00Z"
+                work: null
+        "400":
+          $ref: "#/components/responses/Error400"
+        "401":
+          $ref: "#/components/responses/Error401"
+        "403":
+          $ref: "#/components/responses/Error403"
+        "404":
+          $ref: "#/components/responses/Error404"
+        "409":
+          $ref: "#/components/responses/Error409"
+  /api/lawyer/cases/{id}/start:
+    post:
+      operationId: startWork
+      tags:
+        - work
+      summary: Начать ведение дела
+      description: >-
+        offer_accepted →in_progress, только выбранный юрист. Дополнение чернового списка K1 для существующего
+        перехода.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            example: 00000000-0000-4000-8000-000000000001
+            format: uuid
+        - name: X-CSRFToken
+          in: header
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            example: demo-csrf-token
+          description: Значение cookie csrftoken текущей сессии (K2). Не секретный пример.
+      responses:
+        "200":
+          description: Успешно
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CaseSummary"
+              example:
+                id: 00000000-0000-4000-8000-000000000001
+                state: in_progress
+                path: specialist
+                ai_state: idle
+                version: 9
+                created_at: "2026-11-15T10:00:00Z"
+                updated_at: "2026-11-15T10:00:00Z"
+                available_actions:
+                  - submit_work
+        "400":
+          $ref: "#/components/responses/Error400"
+        "401":
+          $ref: "#/components/responses/Error401"
+        "403":
+          $ref: "#/components/responses/Error403"
+        "404":
+          $ref: "#/components/responses/Error404"
+        "409":
+          $ref: "#/components/responses/Error409"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VersionInput"
+            example:
+              expected_version: 8
+  /api/lawyer/cases/{id}/submit-work:
+    post:
+      operationId: submitWork
+      tags:
+        - work
+      summary: Сдать работу
+      description: >-
+        in_progress →work_submitted, выбранный юрист прикладывает текст результата. Версия и время
+        запускают3-дневное окно приёмки.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            example: 00000000-0000-4000-8000-000000000001
+            format: uuid
+        - name: X-CSRFToken
+          in: header
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            example: demo-csrf-token
+          description: Значение cookie csrftoken текущей сессии (K2). Не секретный пример.
+      responses:
+        "200":
+          description: Успешно
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CaseSummary"
+              example:
+                id: 00000000-0000-4000-8000-000000000001
+                state: work_submitted
+                path: specialist
+                ai_state: idle
+                version: 10
+                created_at: "2026-11-15T10:00:00Z"
+                updated_at: "2026-11-15T10:00:00Z"
+                available_actions: []
+        "400":
+          $ref: "#/components/responses/Error400"
+        "401":
+          $ref: "#/components/responses/Error401"
+        "403":
+          $ref: "#/components/responses/Error403"
+        "404":
+          $ref: "#/components/responses/Error404"
+        "409":
+          $ref: "#/components/responses/Error409"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WorkSubmissionInput"
+            example:
+              expected_version: 9
+              text: Подготовлен демонстрационный пакет документов.
+  /api/cases/{id}/work/accept:
+    post:
+      operationId: acceptWork
+      tags:
+        - work
+      summary: Принять результат работы
+      description: >-
+        Только владелец в work_submitted; сервер принимает конкретную версию, выполняет release demo hold.
+        Автоприёмка через3дня —внутреннее событие, не клиентский флаг.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            example: 00000000-0000-4000-8000-000000000001
+            format: uuid
+        - name: X-CSRFToken
+          in: header
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            example: demo-csrf-token
+          description: Значение cookie csrftoken текущей сессии (K2). Не секретный пример.
+      responses:
+        "200":
+          description: Успешно
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CaseDetail"
+              example:
+                id: 00000000-0000-4000-8000-000000000001
+                state: completed
+                path: specialist
+                ai_state: idle
+                version: 11
+                created_at: "2026-11-15T10:00:00Z"
+                updated_at: "2026-11-15T10:00:00Z"
+                available_actions:
+                  - close_case
+                card_confirmed_at: "2026-11-15T09:00:00Z"
+                pool: null
+                work:
+                  version: 1
+                  text: Подготовлен демонстрационный пакет документов.
+                  submitted_at: "2026-11-15T10:00:00Z"
+        "400":
+          $ref: "#/components/responses/Error400"
+        "401":
+          $ref: "#/components/responses/Error401"
+        "403":
+          $ref: "#/components/responses/Error403"
+        "404":
+          $ref: "#/components/responses/Error404"
+        "409":
+          $ref: "#/components/responses/Error409"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AcceptWorkInput"
+            example:
+              expected_version: 10
+              work_version: 1
+  /api/cases/{id}/close:
+    post:
+      operationId: closeCase
+      tags:
+        - cases
+      summary: Закрыть своё обращение
+      description: >-
+        Существующий переход активное →closed. Нельзя обходить незавершённый hold; его завершение/возврат и
+        спорные случаи требуют согласованной политики (вопрос K1 в assumptions), пока такое действие не
+        предлагается в available_actions.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            example: 00000000-0000-4000-8000-000000000001
+            format: uuid
+        - name: X-CSRFToken
+          in: header
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            example: demo-csrf-token
+          description: Значение cookie csrftoken текущей сессии (K2). Не секретный пример.
+      responses:
+        "200":
+          description: Успешно
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CaseDetail"
+              example:
+                id: 00000000-0000-4000-8000-000000000001
+                state: closed
+                path: self_guided
+                ai_state: idle
+                version: 12
+                created_at: "2026-11-15T10:00:00Z"
+                updated_at: "2026-11-15T10:00:00Z"
+                available_actions: []
+                card_confirmed_at: "2026-11-15T09:00:00Z"
+                pool: null
+                work: null
+        "400":
+          $ref: "#/components/responses/Error400"
+        "401":
+          $ref: "#/components/responses/Error401"
+        "403":
+          $ref: "#/components/responses/Error403"
+        "404":
+          $ref: "#/components/responses/Error404"
+        "409":
+          $ref: "#/components/responses/Error409"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CloseCaseInput"
+            example:
+              expected_version: 11
+              reason: Пользователь завершил обращение.
 components:
   securitySchemes:
     session:
@@ -62,25 +2467,1850 @@ components:
   schemas:
     Health:
       type: object
-      required: [status]
+      required:
+        - status
       properties:
         status:
           type: string
-          enum: [ok]
+          enum:
+            - ok
     Readiness:
       type: object
-      required: [status, checks]
+      required:
+        - status
+        - checks
       properties:
         status:
           type: string
-          enum: [ready, not_ready]
+          enum:
+            - ready
+            - not_ready
         checks:
           type: object
-          required: [database, redis]
+          required:
+            - database
+            - redis
           properties:
             database:
               type: boolean
             redis:
               type: boolean
+    CaseState:
+      type: string
+      enum:
+        - draft
+        - clarifying
+        - card_ready
+        - card_confirmed
+        - self_guided
+        - claim_draft
+        - in_pool
+        - closed
+        - claim_in_review
+        - claim_approved
+        - claim_edited
+        - awaiting_response
+        - resolved
+        - no_response
+        - has_offers
+        - no_offers
+        - offer_accepted
+        - in_progress
+        - work_submitted
+        - completed
+        - disputed
+      example: draft
+    AiState:
+      type: string
+      enum:
+        - idle
+        - thinking
+        - failed
+      example: idle
+    CasePath:
+      type: string
+      enum:
+        - self_guided
+        - claim
+        - specialist
+      example: self_guided
+    FactStatus:
+      type: string
+      enum:
+        - found
+        - not_found
+        - user_edited
+      example: found
+    MoneyKopecks:
+      type: integer
+      minimum: 0
+      example: 6800000
+      description: Целое число копеек RUB, без float. Лимиты и цены проверяет сервер.
+    Action:
+      type: string
+      enum:
+        - send_message
+        - upload_document
+        - confirm_card
+        - choose_path
+        - create_claim
+        - confirm_personal_data
+        - submit_claim
+        - accept_edits
+        - reject_edits
+        - mark_sent
+        - record_outcome
+        - publish_pool
+        - accept_offer
+        - take_claim
+        - approve_claim
+        - edit_claim
+        - start_work
+        - submit_work
+        - accept_work
+        - close_case
+      example: send_message
+    Version:
+      type: integer
+      minimum: 1
+      example: 1
+    ConsentInput:
+      type: object
+      additionalProperties: false
+      required:
+        - accepted
+        - text_version
+      properties:
+        accepted:
+          type: boolean
+          const: true
+          example: true
+        text_version:
+          type: string
+          minLength: 1
+          example: demo-v1
+    VersionInput:
+      type: object
+      additionalProperties: false
+      required:
+        - expected_version
+      properties:
+        expected_version:
+          $ref: "#/components/schemas/Version"
+          description: Ожидаемая Case.version, не номер ClaimVersion и не версия назначения.
+    ConsentVersionInput:
+      type: object
+      additionalProperties: false
+      required:
+        - expected_version
+        - consent
+      properties:
+        expected_version:
+          $ref: "#/components/schemas/Version"
+          description: Ожидаемая Case.version, не номер ClaimVersion и не версия назначения.
+        consent:
+          $ref: "#/components/schemas/ConsentInput"
+    ErrorDetails:
+      type: object
+      additionalProperties:
+        type: array
+        items:
+          type: string
+      example:
+        fields:
+          - payment_date
+    ApiError:
+      type: object
+      additionalProperties: false
+      required:
+        - code
+        - message
+        - details
+      properties:
+        code:
+          type: string
+          minLength: 1
+          example: invalid_transition
+        message:
+          type: string
+          minLength: 1
+          example: Действие недоступно в текущем состоянии
+        details:
+          $ref: "#/components/schemas/ErrorDetails"
+    CaseSummary:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - state
+        - path
+        - ai_state
+        - version
+        - created_at
+        - updated_at
+        - available_actions
+      properties:
+        id:
+          type: string
+          minLength: 1
+          example: 00000000-0000-4000-8000-000000000001
+          format: uuid
+        state:
+          $ref: "#/components/schemas/CaseState"
+        path:
+          anyOf:
+            - $ref: "#/components/schemas/CasePath"
+            - type: "null"
+        ai_state:
+          $ref: "#/components/schemas/AiState"
+        version:
+          $ref: "#/components/schemas/Version"
+        created_at:
+          type: string
+          minLength: 1
+          example: "2026-11-15T10:00:00Z"
+          format: date-time
+        updated_at:
+          type: string
+          minLength: 1
+          example: "2026-11-15T10:00:00Z"
+          format: date-time
+        available_actions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Action"
+      example:
+        id: 00000000-0000-4000-8000-000000000001
+        state: card_ready
+        path: null
+        ai_state: idle
+        version: 2
+        created_at: "2026-11-15T10:00:00Z"
+        updated_at: "2026-11-15T10:00:00Z"
+        available_actions:
+          - confirm_card
+          - close_case
+    CaseDetail:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - state
+        - path
+        - ai_state
+        - version
+        - created_at
+        - updated_at
+        - available_actions
+        - card_confirmed_at
+        - pool
+        - work
+      properties:
+        id:
+          type: string
+          minLength: 1
+          example: 00000000-0000-4000-8000-000000000001
+          format: uuid
+        state:
+          $ref: "#/components/schemas/CaseState"
+        path:
+          anyOf:
+            - $ref: "#/components/schemas/CasePath"
+            - type: "null"
+        ai_state:
+          $ref: "#/components/schemas/AiState"
+        version:
+          $ref: "#/components/schemas/Version"
+        created_at:
+          type: string
+          minLength: 1
+          example: "2026-11-15T10:00:00Z"
+          format: date-time
+        updated_at:
+          type: string
+          minLength: 1
+          example: "2026-11-15T10:00:00Z"
+          format: date-time
+        available_actions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Action"
+        card_confirmed_at:
+          anyOf:
+            - type: string
+              minLength: 1
+              example: "2026-11-15T10:00:00Z"
+              format: date-time
+            - type: "null"
+        pool:
+          anyOf:
+            - $ref: "#/components/schemas/OwnerPoolStatus"
+            - type: "null"
+        work:
+          anyOf:
+            - $ref: "#/components/schemas/WorkResult"
+            - type: "null"
+      example:
+        id: 00000000-0000-4000-8000-000000000001
+        state: work_submitted
+        path: specialist
+        ai_state: idle
+        version: 10
+        created_at: "2026-11-15T10:00:00Z"
+        updated_at: "2026-11-15T10:00:00Z"
+        available_actions:
+          - accept_work
+        card_confirmed_at: "2026-11-15T09:00:00Z"
+        pool: null
+        work:
+          version: 1
+          text: Подготовлен демонстрационный пакет документов.
+          submitted_at: "2026-11-15T10:00:00Z"
+    CreateCaseInput:
+      type: object
+      additionalProperties: false
+      required:
+        - message
+        - consent
+      properties:
+        message:
+          type: string
+          minLength: 1
+          example: Оплатила вымышленный курс, хочу вернуть деньги.
+        consent:
+          $ref: "#/components/schemas/ConsentInput"
+    Message:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - author
+        - text
+        - created_at
+      properties:
+        id:
+          type: string
+          minLength: 1
+          example: 00000000-0000-4000-8000-000000000002
+          format: uuid
+        author:
+          type: string
+          enum:
+            - user
+            - ai
+          example: user
+        text:
+          type: string
+          minLength: 1
+          example: Уточните дату оплаты вымышленного курса.
+        created_at:
+          type: string
+          minLength: 1
+          example: "2026-11-15T10:00:00Z"
+          format: date-time
+      example:
+        id: 00000000-0000-4000-8000-000000000002
+        author: user
+        text: Оплатила вымышленный курс 1 октября. Учебный проект Демо. Стоимость 68000 рублей.
+        created_at: "2026-11-15T10:00:00Z"
+    MessageInput:
+      type: object
+      additionalProperties: false
+      required:
+        - text
+        - expected_version
+      properties:
+        text:
+          type: string
+          minLength: 1
+          example: Оплатила вымышленный курс 1 октября.
+        expected_version:
+          $ref: "#/components/schemas/Version"
+          description: Ожидаемая Case.version, не номер ClaimVersion и не версия назначения.
+      example:
+        text: Оплатила вымышленный курс 1 октября. Учебный проект Демо. Стоимость 68000 рублей.
+        expected_version: 1
+    MessageAccepted:
+      type: object
+      additionalProperties: false
+      required:
+        - message
+        - case
+      properties:
+        message:
+          $ref: "#/components/schemas/Message"
+        case:
+          $ref: "#/components/schemas/CaseSummary"
+    DocumentMetadata:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - filename
+        - content_type
+        - size_bytes
+        - created_at
+      properties:
+        id:
+          type: string
+          minLength: 1
+          example: 00000000-0000-4000-8000-000000000003
+          format: uuid
+        filename:
+          type: string
+          minLength: 1
+          example: demo-receipt.txt
+        content_type:
+          type: string
+          enum:
+            - image/jpeg
+            - image/png
+            - text/plain
+          example: image/jpeg
+        size_bytes:
+          type: integer
+          minimum: 1
+          example: 128
+        created_at:
+          type: string
+          minLength: 1
+          example: "2026-11-15T10:00:00Z"
+          format: date-time
+      example:
+        id: 00000000-0000-4000-8000-000000000003
+        filename: demo-receipt.txt
+        content_type: text/plain
+        size_bytes: 128
+        created_at: "2026-11-15T10:00:00Z"
+    FactSource:
+      type: object
+      additionalProperties: false
+      required:
+        - kind
+        - id
+        - source_version
+      properties:
+        kind:
+          type: string
+          enum:
+            - message
+            - document
+          example: message
+        id:
+          type: string
+          minLength: 1
+          example: 00000000-0000-4000-8000-000000000002
+          format: uuid
+        source_version:
+          $ref: "#/components/schemas/Version"
+    Fact:
+      type: object
+      additionalProperties: false
+      required:
+        - key
+        - value
+        - status
+        - source
+        - source_quote
+        - required
+      properties:
+        key:
+          type: string
+          minLength: 1
+          example: company_name
+        value:
+          anyOf:
+            - type: string
+              minLength: 1
+              example: Учебный проект Демо
+            - type: "null"
+        status:
+          $ref: "#/components/schemas/FactStatus"
+        source:
+          anyOf:
+            - $ref: "#/components/schemas/FactSource"
+            - type: "null"
+        source_quote:
+          anyOf:
+            - type: string
+              minLength: 1
+              example: Учебный проект Демо
+            - type: "null"
+        required:
+          type: boolean
+          example: true
+      allOf:
+        - if:
+            properties:
+              status:
+                const: found
+          then:
+            properties:
+              value:
+                type: string
+                minLength: 1
+                example: Синтетический пример
+              source:
+                $ref: "#/components/schemas/FactSource"
+              source_quote:
+                type: string
+                minLength: 1
+                example: Синтетический пример
+        - if:
+            properties:
+              status:
+                const: not_found
+          then:
+            properties:
+              value:
+                type: "null"
+              source:
+                type: "null"
+              source_quote:
+                type: "null"
+        - if:
+            properties:
+              status:
+                const: user_edited
+          then:
+            properties:
+              value:
+                type: string
+                minLength: 1
+                example: Синтетический пример
+      description: >-
+        found: непустое значение, источник и дословная цитата обязательны. not_found: value/source/quote=null.
+        user_edited: непустое значение, источник может отсутствовать; редактирует владелец.
+    Card:
+      type: object
+      additionalProperties: false
+      required:
+        - version
+        - confirmed_at
+        - facts
+        - missing_required_fields
+      properties:
+        version:
+          $ref: "#/components/schemas/Version"
+        confirmed_at:
+          anyOf:
+            - type: string
+              minLength: 1
+              example: "2026-11-15T10:00:00Z"
+              format: date-time
+            - type: "null"
+        facts:
+          type: array
+          items:
+            $ref: "#/components/schemas/Fact"
+        missing_required_fields:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            example: payment_date
+      example:
+        version: 1
+        confirmed_at: null
+        facts:
+          - key: company_name
+            value: Учебный проект Демо
+            status: found
+            source:
+              kind: message
+              id: 00000000-0000-4000-8000-000000000002
+              source_version: 1
+            source_quote: Учебный проект Демо
+            required: true
+          - key: payment_date
+            value: null
+            status: not_found
+            source: null
+            source_quote: null
+            required: true
+        missing_required_fields:
+          - payment_date
+    EditFactInput:
+      type: object
+      additionalProperties: false
+      required:
+        - value
+        - expected_version
+      properties:
+        value:
+          type: string
+          minLength: 1
+          example: Учебный проект Демо
+        expected_version:
+          $ref: "#/components/schemas/Version"
+          description: Ожидаемая Case.version, не номер ClaimVersion и не версия назначения.
+    CompanyStatus:
+      type: string
+      enum:
+        - active
+        - liquidating
+        - bankrupt
+        - unavailable
+      example: active
+    CompanyCheck:
+      type: object
+      additionalProperties: false
+      required:
+        - status
+        - name
+        - inn
+        - registered_on
+        - source
+        - checked_at
+        - is_demo
+      properties:
+        status:
+          $ref: "#/components/schemas/CompanyStatus"
+        name:
+          anyOf:
+            - type: string
+              minLength: 1
+              example: Учебный проект Демо
+            - type: "null"
+        inn:
+          anyOf:
+            - type: string
+              minLength: 1
+              example: "0000000000"
+              pattern: ^(?:[0-9]{10}|[0-9]{12})$
+            - type: "null"
+        registered_on:
+          anyOf:
+            - type: string
+              minLength: 1
+              example: "2026-11-15"
+              format: date
+            - type: "null"
+        source:
+          type: string
+          minLength: 1
+          example: demo-fixture
+        checked_at:
+          type: string
+          minLength: 1
+          example: "2026-11-15T10:00:00Z"
+          format: date-time
+        is_demo:
+          type: boolean
+          example: true
+    PathOption:
+      type: object
+      additionalProperties: false
+      required:
+        - path
+        - title
+        - available
+        - reason
+        - estimated_days
+        - price_kopecks
+      properties:
+        path:
+          $ref: "#/components/schemas/CasePath"
+        title:
+          type: string
+          minLength: 1
+          example: Реши сам
+        available:
+          type: boolean
+          example: true
+        reason:
+          anyOf:
+            - type: string
+              minLength: 1
+              example: Компания недоступна для проверки
+            - type: "null"
+        estimated_days:
+          type: integer
+          minimum: 0
+          example: 1
+        price_kopecks:
+          anyOf:
+            - $ref: "#/components/schemas/MoneyKopecks"
+            - type: "null"
+    PathInput:
+      type: object
+      additionalProperties: false
+      required:
+        - path
+        - expected_version
+      properties:
+        path:
+          $ref: "#/components/schemas/CasePath"
+        expected_version:
+          $ref: "#/components/schemas/Version"
+          description: Ожидаемая Case.version, не номер ClaimVersion и не версия назначения.
+    LegalNorm:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - title
+        - url
+        - verified_by_lawyer
+      properties:
+        id:
+          type: string
+          minLength: 1
+          example: demo-rule-1
+        title:
+          type: string
+          minLength: 1
+          example: Демонстрационное правило
+        url:
+          type: string
+          minLength: 1
+          example: https://example.invalid/demo-rule
+          format: uri
+        verified_by_lawyer:
+          type: boolean
+          example: false
+    PlanStep:
+      type: object
+      additionalProperties: false
+      required:
+        - order
+        - text
+        - due_on
+        - documents
+        - destination
+        - norms
+      properties:
+        order:
+          type: integer
+          minimum: 1
+          example: 1
+        text:
+          type: string
+          minLength: 1
+          example: Сохраните подтверждение оплаты.
+        due_on:
+          anyOf:
+            - type: string
+              minLength: 1
+              example: "2026-11-15"
+              format: date
+            - type: "null"
+        documents:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            example: Чек
+        destination:
+          type: string
+          minLength: 1
+          example: Демонстрационная компания
+        norms:
+          type: array
+          items:
+            $ref: "#/components/schemas/LegalNorm"
+    SelfGuidedPlan:
+      type: object
+      additionalProperties: false
+      required:
+        - version
+        - steps
+        - disclaimer
+      properties:
+        version:
+          $ref: "#/components/schemas/Version"
+        steps:
+          type: array
+          items:
+            $ref: "#/components/schemas/PlanStep"
+        disclaimer:
+          type: string
+          minLength: 1
+          example: Не является юридической консультацией. Демонстрационные нормы не проверены юристом.
+    ClaimPersonalData:
+      type: object
+      additionalProperties: false
+      required:
+        - full_name
+        - reply_address
+        - contract_reference
+      properties:
+        full_name:
+          type: string
+          minLength: 1
+          example: Демо Пользователь
+        reply_address:
+          type: string
+          minLength: 1
+          example: Вымышленный город, учебный адрес
+        contract_reference:
+          type: string
+          minLength: 1
+          example: DEMO-CONTRACT-1
+      example:
+        full_name: Демо Пользователь
+        reply_address: Вымышленный город, учебный адрес
+        contract_reference: DEMO-CONTRACT-1
+    PersonalDataInput:
+      type: object
+      additionalProperties: false
+      required:
+        - expected_version
+        - data
+        - confirmed
+      properties:
+        expected_version:
+          $ref: "#/components/schemas/Version"
+          description: Ожидаемая Case.version, не номер ClaimVersion и не версия назначения.
+        data:
+          $ref: "#/components/schemas/ClaimPersonalData"
+        confirmed:
+          type: boolean
+          const: true
+          example: true
+    ClaimVersion:
+      type: object
+      additionalProperties: false
+      required:
+        - version
+        - author
+        - text
+        - comment
+        - created_at
+      properties:
+        version:
+          $ref: "#/components/schemas/Version"
+        author:
+          type: string
+          enum:
+            - ai
+            - lawyer
+          example: ai
+        text:
+          type: string
+          minLength: 1
+          example: Демонстрационная претензия по вымышленному курсу.
+        comment:
+          anyOf:
+            - type: string
+              minLength: 1
+              example: Уточнена формулировка требования.
+            - type: "null"
+        created_at:
+          type: string
+          minLength: 1
+          example: "2026-11-15T10:00:00Z"
+          format: date-time
+    Claim:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - case_id
+        - case_version
+        - current_version
+        - versions
+        - personal_data
+        - personal_data_confirmed
+        - faulty
+        - submitted_at
+        - sent_on
+        - response_due_on
+        - available_actions
+      properties:
+        id:
+          type: string
+          minLength: 1
+          example: 00000000-0000-4000-8000-000000000004
+          format: uuid
+        case_id:
+          type: string
+          minLength: 1
+          example: 00000000-0000-4000-8000-000000000001
+          format: uuid
+        case_version:
+          $ref: "#/components/schemas/Version"
+          description: Текущая Case.version, используется как expected_version в командах.
+        current_version:
+          $ref: "#/components/schemas/Version"
+        versions:
+          type: array
+          items:
+            $ref: "#/components/schemas/ClaimVersion"
+        personal_data:
+          anyOf:
+            - $ref: "#/components/schemas/ClaimPersonalData"
+            - type: "null"
+        personal_data_confirmed:
+          type: boolean
+          example: false
+        faulty:
+          type: boolean
+          example: false
+        submitted_at:
+          anyOf:
+            - type: string
+              minLength: 1
+              example: "2026-11-15T10:00:00Z"
+              format: date-time
+            - type: "null"
+        sent_on:
+          anyOf:
+            - type: string
+              minLength: 1
+              example: "2026-11-15"
+              format: date
+            - type: "null"
+        response_due_on:
+          anyOf:
+            - type: string
+              minLength: 1
+              example: "2026-11-15"
+              format: date
+            - type: "null"
+        available_actions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Action"
+      example:
+        id: 00000000-0000-4000-8000-000000000004
+        case_id: 00000000-0000-4000-8000-000000000001
+        case_version: 3
+        current_version: 1
+        versions:
+          - version: 1
+            author: ai
+            text: "Демонстрационная претензия по вымышленному курсу. Заявитель: Демо Пользователь."
+            comment: null
+            created_at: "2026-11-15T10:00:00Z"
+        personal_data:
+          full_name: Демо Пользователь
+          reply_address: Вымышленный город, учебный адрес
+          contract_reference: DEMO-CONTRACT-1
+        personal_data_confirmed: true
+        faulty: false
+        submitted_at: null
+        sent_on: null
+        response_due_on: null
+        available_actions:
+          - submit_claim
+    ClaimAccepted:
+      type: object
+      additionalProperties: false
+      required:
+        - claim_id
+        - case
+      properties:
+        claim_id:
+          type: string
+          minLength: 1
+          example: 00000000-0000-4000-8000-000000000004
+          format: uuid
+        case:
+          $ref: "#/components/schemas/CaseSummary"
+    ClaimVersionInput:
+      type: object
+      additionalProperties: false
+      required:
+        - expected_version
+        - claim_version
+      properties:
+        expected_version:
+          $ref: "#/components/schemas/Version"
+          description: Ожидаемая Case.version, не номер ClaimVersion и не версия назначения.
+        claim_version:
+          $ref: "#/components/schemas/Version"
+          description: Номер просматриваемой неизменяемой ClaimVersion.
+    SubmitClaimInput:
+      type: object
+      additionalProperties: false
+      required:
+        - expected_version
+        - claim_version
+        - consent
+      properties:
+        expected_version:
+          $ref: "#/components/schemas/Version"
+          description: Ожидаемая Case.version, не номер ClaimVersion и не версия назначения.
+        claim_version:
+          $ref: "#/components/schemas/Version"
+          description: Номер просматриваемой неизменяемой ClaimVersion.
+        consent:
+          $ref: "#/components/schemas/ConsentInput"
+    RejectEditsInput:
+      type: object
+      additionalProperties: false
+      required:
+        - expected_version
+        - claim_version
+        - comment
+      properties:
+        expected_version:
+          $ref: "#/components/schemas/Version"
+          description: Ожидаемая Case.version, не номер ClaimVersion и не версия назначения.
+        claim_version:
+          $ref: "#/components/schemas/Version"
+          description: Номер просматриваемой неизменяемой ClaimVersion.
+        comment:
+          type: string
+          minLength: 1
+          example: Уточните основание требования.
+    MarkSentInput:
+      type: object
+      additionalProperties: false
+      required:
+        - expected_version
+        - claim_version
+        - sent_on
+      properties:
+        expected_version:
+          $ref: "#/components/schemas/Version"
+          description: Ожидаемая Case.version, не номер ClaimVersion и не версия назначения.
+        claim_version:
+          $ref: "#/components/schemas/Version"
+          description: Номер просматриваемой неизменяемой ClaimVersion.
+        sent_on:
+          type: string
+          minLength: 1
+          example: "2026-11-15"
+          format: date
+    OutcomeInput:
+      type: object
+      additionalProperties: false
+      required:
+        - expected_version
+        - outcome
+        - comment
+      properties:
+        expected_version:
+          $ref: "#/components/schemas/Version"
+          description: Ожидаемая Case.version, не номер ClaimVersion и не версия назначения.
+        outcome:
+          type: string
+          enum:
+            - resolved
+            - refused
+            - no_response
+          example: resolved
+        comment:
+          type: string
+          minLength: 1
+          example: Демонстрационный результат.
+    ReviewQueueItem:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - category
+        - amount_kopecks
+        - queued_at
+        - case_version
+      properties:
+        id:
+          type: string
+          minLength: 1
+          example: 00000000-0000-4000-8000-000000000004
+          format: uuid
+        category:
+          type: string
+          minLength: 1
+          example: education
+        amount_kopecks:
+          $ref: "#/components/schemas/MoneyKopecks"
+        queued_at:
+          type: string
+          minLength: 1
+          example: "2026-11-15T10:00:00Z"
+          format: date-time
+        case_version:
+          $ref: "#/components/schemas/Version"
+          description: Текущая Case.version для take.expected_version.
+      example:
+        id: 00000000-0000-4000-8000-000000000004
+        category: education
+        amount_kopecks: 6800000
+        queued_at: "2026-11-15T10:00:00Z"
+        case_version: 4
+    ReviewVersion:
+      type: object
+      additionalProperties: false
+      required:
+        - version
+        - template_text
+        - comment
+      properties:
+        version:
+          $ref: "#/components/schemas/Version"
+        template_text:
+          type: string
+          minLength: 1
+          example: Заявитель {{claimant}} просит вернуть стоимость курса. Ответ направить {{reply_address}}.
+        comment:
+          anyOf:
+            - type: string
+              minLength: 1
+              example: Уточнён текст требования.
+            - type: "null"
+    ReviewDocument:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - label
+        - content_type
+        - safe_redaction_available
+      properties:
+        id:
+          type: string
+          minLength: 1
+          example: 00000000-0000-4000-8000-000000000003
+          format: uuid
+        label:
+          type: string
+          minLength: 1
+          example: Маскированный демонстрационный чек
+        content_type:
+          type: string
+          enum:
+            - image/jpeg
+            - image/png
+            - text/plain
+          example: image/jpeg
+        safe_redaction_available:
+          type: boolean
+          example: true
+    ReviewFact:
+      type: object
+      additionalProperties: false
+      required:
+        - key
+        - display_value
+        - safe_source_quote
+      properties:
+        key:
+          type: string
+          minLength: 1
+          example: amount_kopecks
+        display_value:
+          type: string
+          minLength: 1
+          example: 68000 рублей
+        safe_source_quote:
+          type: string
+          minLength: 1
+          example: Стоимость курса 68000 рублей.
+    ReviewClaim:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - case_id
+        - case_version
+        - assignment_version
+        - assignment_expires_at
+        - version
+        - facts
+        - documents
+        - available_actions
+      properties:
+        id:
+          type: string
+          minLength: 1
+          example: 00000000-0000-4000-8000-000000000004
+          format: uuid
+        case_id:
+          type: string
+          minLength: 1
+          example: 00000000-0000-4000-8000-000000000001
+          format: uuid
+          description: Технический ID для проверки parent/безопасного content-route. Не даёт доступ к owner CaseDTO.
+        case_version:
+          $ref: "#/components/schemas/Version"
+          description: Текущая Case.version, используется как expected_version в командах.
+        assignment_version:
+          $ref: "#/components/schemas/Version"
+          description: Версия текущего ReviewAssignment, отдельно от Case/ClaimVersion.
+        assignment_expires_at:
+          type: string
+          minLength: 1
+          example: "2026-11-15T10:00:00Z"
+          format: date-time
+        version:
+          $ref: "#/components/schemas/ReviewVersion"
+        facts:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReviewFact"
+        documents:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReviewDocument"
+        available_actions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Action"
+      example:
+        id: 00000000-0000-4000-8000-000000000004
+        case_id: 00000000-0000-4000-8000-000000000001
+        case_version: 5
+        assignment_version: 1
+        assignment_expires_at: "2026-11-15T14:00:00Z"
+        version:
+          version: 1
+          template_text: Заявитель {{claimant}} просит вернуть стоимость курса. Ответ направить {{reply_address}}.
+          comment: null
+        facts:
+          - key: amount_kopecks
+            display_value: 68000 рублей
+            safe_source_quote: Стоимость курса 68000 рублей.
+        documents:
+          - id: 00000000-0000-4000-8000-000000000003
+            label: Маскированный демонстрационный чек
+            content_type: text/plain
+            safe_redaction_available: true
+        available_actions:
+          - approve_claim
+          - edit_claim
+    TakeClaimInput:
+      type: object
+      additionalProperties: false
+      required:
+        - expected_version
+      properties:
+        expected_version:
+          $ref: "#/components/schemas/Version"
+          description: Ожидаемая Case.version, не номер ClaimVersion и не версия назначения.
+    ReviewActionInput:
+      type: object
+      additionalProperties: false
+      required:
+        - expected_version
+        - assignment_version
+        - claim_version
+      properties:
+        expected_version:
+          $ref: "#/components/schemas/Version"
+          description: Ожидаемая Case.version, не номер ClaimVersion и не версия назначения.
+        assignment_version:
+          $ref: "#/components/schemas/Version"
+          description: Версия текущего ReviewAssignment, отдельно от Case/ClaimVersion.
+        claim_version:
+          $ref: "#/components/schemas/Version"
+          description: Номер просматриваемой неизменяемой ClaimVersion.
+    ReviewEditInput:
+      type: object
+      additionalProperties: false
+      required:
+        - expected_version
+        - assignment_version
+        - claim_version
+        - template_text
+        - comment
+      properties:
+        expected_version:
+          $ref: "#/components/schemas/Version"
+          description: Ожидаемая Case.version, не номер ClaimVersion и не версия назначения.
+        assignment_version:
+          $ref: "#/components/schemas/Version"
+          description: Версия текущего ReviewAssignment, отдельно от Case/ClaimVersion.
+        claim_version:
+          $ref: "#/components/schemas/Version"
+          description: Номер просматриваемой неизменяемой ClaimVersion.
+        template_text:
+          type: string
+          minLength: 1
+          example: Заявитель {{claimant}} требует возврата стоимости курса.
+        comment:
+          type: string
+          minLength: 1
+          example: Уточнено требование.
+    PoolModerationStatus:
+      type: string
+      enum:
+        - pending
+        - approved
+        - rejected
+      example: pending
+    OwnerPoolStatus:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - moderation_status
+        - rejection_reason
+      properties:
+        id:
+          type: string
+          minLength: 1
+          example: 00000000-0000-4000-8000-000000000005
+          format: uuid
+        moderation_status:
+          $ref: "#/components/schemas/PoolModerationStatus"
+        rejection_reason:
+          anyOf:
+            - type: string
+              minLength: 1
+              example: Описание требует дополнительной очистки.
+            - type: "null"
+    PublicCompany:
+      type: object
+      additionalProperties: false
+      required:
+        - name
+        - status
+      properties:
+        name:
+          type: string
+          minLength: 1
+          example: Учебный проект Демо
+        status:
+          $ref: "#/components/schemas/CompanyStatus"
+    AmountRange:
+      type: object
+      additionalProperties: false
+      required:
+        - min_kopecks
+        - max_kopecks
+      properties:
+        min_kopecks:
+          type: integer
+          minimum: 0
+          example: 5000000
+        max_kopecks:
+          type: integer
+          minimum: 0
+          example: 10000000
+    SimilarCases:
+      type: object
+      additionalProperties: false
+      required:
+        - count
+        - cities_count
+        - period_months
+      properties:
+        count:
+          type: integer
+          minimum: 0
+          example: 34
+        cities_count:
+          type: integer
+          minimum: 0
+          example: 5
+        period_months:
+          type: integer
+          minimum: 1
+          example: 12
+    PoolCard:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - category
+        - description
+        - city
+        - amount_range
+        - company
+        - actions_taken
+        - similar_cases
+      properties:
+        id:
+          type: string
+          minLength: 1
+          example: 00000000-0000-4000-8000-000000000005
+          format: uuid
+        category:
+          type: string
+          minLength: 1
+          example: education
+        description:
+          type: string
+          minLength: 1
+          example: Потребитель требует возврата оплаты за вымышленный курс.
+        city:
+          type: string
+          minLength: 1
+          example: Вымышленный город
+        amount_range:
+          $ref: "#/components/schemas/AmountRange"
+        company:
+          $ref: "#/components/schemas/PublicCompany"
+        actions_taken:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            example: Претензия отправлена, ответа нет.
+        similar_cases:
+          $ref: "#/components/schemas/SimilarCases"
+    OfferInput:
+      type: object
+      additionalProperties: false
+      required:
+        - scope
+        - duration_days
+        - price_kopecks
+        - included
+        - excluded
+      properties:
+        scope:
+          type: string
+          minLength: 1
+          example: Подготовлю документы по вымышленному делу.
+        duration_days:
+          type: integer
+          minimum: 1
+          example: 7
+        price_kopecks:
+          $ref: "#/components/schemas/MoneyKopecks"
+        included:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            example: Подготовка документов
+        excluded:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            example: Представительство в суде
+      example:
+        scope: Подготовлю документы по вымышленному делу.
+        duration_days: 7
+        price_kopecks: 1200000
+        included:
+          - Подготовка документов
+        excluded:
+          - Представительство в суде
+    Offer:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - lawyer_label
+        - scope
+        - duration_days
+        - price_kopecks
+        - included
+        - excluded
+        - accepted
+        - created_at
+      properties:
+        id:
+          type: string
+          minLength: 1
+          example: 00000000-0000-4000-8000-000000000006
+          format: uuid
+        lawyer_label:
+          type: string
+          minLength: 1
+          example: Демо-юрист
+        scope:
+          type: string
+          minLength: 1
+          example: Подготовка документов
+        duration_days:
+          type: integer
+          minimum: 1
+          example: 7
+        price_kopecks:
+          $ref: "#/components/schemas/MoneyKopecks"
+        included:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            example: Подготовка документов
+        excluded:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            example: Представительство
+        accepted:
+          type: boolean
+          example: false
+        created_at:
+          type: string
+          minLength: 1
+          example: "2026-11-15T10:00:00Z"
+          format: date-time
+      example:
+        id: 00000000-0000-4000-8000-000000000006
+        lawyer_label: Демо-юрист
+        scope: Подготовка документов
+        duration_days: 7
+        price_kopecks: 1200000
+        included:
+          - Подготовка документов
+        excluded:
+          - Представительство
+        accepted: false
+        created_at: "2026-11-15T10:00:00Z"
+    WorkResult:
+      type: object
+      additionalProperties: false
+      required:
+        - version
+        - text
+        - submitted_at
+      properties:
+        version:
+          $ref: "#/components/schemas/Version"
+        text:
+          type: string
+          minLength: 1
+          example: Подготовлен демонстрационный пакет документов.
+        submitted_at:
+          type: string
+          minLength: 1
+          example: "2026-11-15T10:00:00Z"
+          format: date-time
+    WorkSubmissionInput:
+      type: object
+      additionalProperties: false
+      required:
+        - expected_version
+        - text
+      properties:
+        expected_version:
+          $ref: "#/components/schemas/Version"
+          description: Ожидаемая Case.version, не номер ClaimVersion и не версия назначения.
+        text:
+          type: string
+          minLength: 1
+          example: Подготовлен демонстрационный пакет документов.
+    LawyerCase:
+      type: object
+      additionalProperties: false
+      required:
+        - case
+        - card
+        - personal_data
+        - documents
+        - claim
+        - accepted_offer
+        - work
+      properties:
+        case:
+          $ref: "#/components/schemas/CaseSummary"
+        card:
+          $ref: "#/components/schemas/Card"
+        personal_data:
+          $ref: "#/components/schemas/ClaimPersonalData"
+        documents:
+          type: array
+          items:
+            $ref: "#/components/schemas/DocumentMetadata"
+        claim:
+          anyOf:
+            - $ref: "#/components/schemas/Claim"
+            - type: "null"
+        accepted_offer:
+          $ref: "#/components/schemas/Offer"
+        work:
+          anyOf:
+            - $ref: "#/components/schemas/WorkResult"
+            - type: "null"
+      example:
+        case:
+          id: 00000000-0000-4000-8000-000000000001
+          state: offer_accepted
+          path: specialist
+          ai_state: idle
+          version: 8
+          created_at: "2026-11-15T10:00:00Z"
+          updated_at: "2026-11-15T10:00:00Z"
+          available_actions:
+            - start_work
+        card:
+          version: 2
+          confirmed_at: "2026-11-15T09:00:00Z"
+          facts:
+            - key: company_name
+              value: Учебный проект Демо
+              status: found
+              source:
+                kind: message
+                id: 00000000-0000-4000-8000-000000000002
+                source_version: 1
+              source_quote: Учебный проект Демо
+              required: true
+            - key: payment_date
+              value: "2026-10-01"
+              status: user_edited
+              source: null
+              source_quote: null
+              required: true
+          missing_required_fields: []
+        personal_data:
+          full_name: Демо Пользователь
+          reply_address: Вымышленный город, учебный адрес
+          contract_reference: DEMO-CONTRACT-1
+        documents:
+          - id: 00000000-0000-4000-8000-000000000003
+            filename: demo-receipt.txt
+            content_type: text/plain
+            size_bytes: 128
+            created_at: "2026-11-15T10:00:00Z"
+        claim:
+          id: 00000000-0000-4000-8000-000000000004
+          case_id: 00000000-0000-4000-8000-000000000001
+          case_version: 3
+          current_version: 1
+          versions:
+            - version: 1
+              author: ai
+              text: "Демонстрационная претензия по вымышленному курсу. Заявитель: Демо Пользователь."
+              comment: null
+              created_at: "2026-11-15T10:00:00Z"
+          personal_data:
+            full_name: Демо Пользователь
+            reply_address: Вымышленный город, учебный адрес
+            contract_reference: DEMO-CONTRACT-1
+          personal_data_confirmed: true
+          faulty: false
+          submitted_at: null
+          sent_on: null
+          response_due_on: null
+          available_actions:
+            - submit_claim
+        accepted_offer:
+          id: 00000000-0000-4000-8000-000000000006
+          lawyer_label: Демо-юрист
+          scope: Подготовка документов
+          duration_days: 7
+          price_kopecks: 1200000
+          included:
+            - Подготовка документов
+          excluded:
+            - Представительство
+          accepted: true
+          created_at: "2026-11-15T10:00:00Z"
+        work: null
+    CloseCaseInput:
+      type: object
+      additionalProperties: false
+      required:
+        - expected_version
+        - reason
+      properties:
+        expected_version:
+          $ref: "#/components/schemas/Version"
+          description: Ожидаемая Case.version, не номер ClaimVersion и не версия назначения.
+        reason:
+          type: string
+          minLength: 1
+          example: Пользователь завершил обращение.
+    Cases:
+      type: object
+      additionalProperties: false
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/CaseSummary"
+    Messages:
+      type: object
+      additionalProperties: false
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Message"
+      example:
+        items:
+          - id: 00000000-0000-4000-8000-000000000002
+            author: user
+            text: Оплатила вымышленный курс 1 октября. Учебный проект Демо. Стоимость 68000 рублей.
+            created_at: "2026-11-15T10:00:00Z"
+    Paths:
+      type: object
+      additionalProperties: false
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/PathOption"
+      example:
+        items:
+          - path: self_guided
+            title: Реши сам
+            available: true
+            reason: null
+            estimated_days: 1
+            price_kopecks: 0
+          - path: claim
+            title: Официальный запрос
+            available: true
+            reason: null
+            estimated_days: 1
+            price_kopecks: 149000
+          - path: specialist
+            title: Обращение к специалисту
+            available: true
+            reason: null
+            estimated_days: 2
+            price_kopecks: null
+    ReviewQueue:
+      type: object
+      additionalProperties: false
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReviewQueueItem"
+      example:
+        items:
+          - id: 00000000-0000-4000-8000-000000000004
+            category: education
+            amount_kopecks: 6800000
+            queued_at: "2026-11-15T10:00:00Z"
+            case_version: 4
+    PoolCards:
+      type: object
+      additionalProperties: false
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/PoolCard"
+    Offers:
+      type: object
+      additionalProperties: false
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Offer"
+    LawyerCases:
+      type: object
+      additionalProperties: false
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/CaseSummary"
+      example:
+        items:
+          - id: 00000000-0000-4000-8000-000000000001
+            state: offer_accepted
+            path: specialist
+            ai_state: idle
+            version: 8
+            created_at: "2026-11-15T10:00:00Z"
+            updated_at: "2026-11-15T10:00:00Z"
+            available_actions:
+              - start_work
+    ConfirmCardInput:
+      type: object
+      additionalProperties: false
+      required:
+        - expected_version
+        - card_version
+      properties:
+        expected_version:
+          $ref: "#/components/schemas/Version"
+          description: Ожидаемая Case.version.
+        card_version:
+          $ref: "#/components/schemas/Version"
+          description: Просмотренная Card.version.
+    AcceptWorkInput:
+      type: object
+      additionalProperties: false
+      required:
+        - expected_version
+        - work_version
+      properties:
+        expected_version:
+          $ref: "#/components/schemas/Version"
+          description: Ожидаемая Case.version.
+        work_version:
+          $ref: "#/components/schemas/Version"
+          description: Версия WorkSubmission, которую просмотрел и принимает владелец.
+  responses:
+    Error400:
+      description: Некорректные данные
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+          example:
+            code: validation_error
+            message: Некорректные данные
+            details: {}
+    Error401:
+      description: Необходимо войти
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+          example:
+            code: authentication_required
+            message: Необходимо войти
+            details: {}
+    Error403:
+      description: Роль не разрешает операцию
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+          example:
+            code: permission_denied
+            message: Роль не разрешает операцию
+            details: {}
+    Error404:
+      description: Объект не найден
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+          example:
+            code: not_found
+            message: Объект не найден
+            details: {}
+    Error409:
+      description: Недопустимый переход или устаревшая версия
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+          example:
+            code: conflict
+            message: Недопустимый переход или устаревшая версия
+            details: {}
 security:
   - session: []
+tags:
+  - name: system
+    description: Существующие системные операции
+  - name: cases
+    description: Контракт будущей реализации cases
+  - name: documents
+    description: Контракт будущей реализации documents
+  - name: card
+    description: Контракт будущей реализации card
+  - name: guidance
+    description: Контракт будущей реализации guidance
+  - name: claims
+    description: Контракт будущей реализации claims
+  - name: review
+    description: Контракт будущей реализации review
+  - name: pool
+    description: Контракт будущей реализации pool
+  - name: work
+    description: Контракт будущей реализации work

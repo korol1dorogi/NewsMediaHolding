@@ -38,6 +38,738 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/cases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Свои обращения
+         * @description Контракт будущей реализации. Владелец/назначение и переход проверяются сервером; чужой объект — 404. Состояние, роль, оплата и владелец не принимаются из запроса.
+         */
+        get: operations["listCases"];
+        put?: never;
+        /**
+         * Создать обращение
+         * @description Создаёт обращение draft и первое сообщение с явным согласием. AI запускается асинхронно; ai_state=thinking. В mock ответ — пример, не доказательство работающего backend.
+         */
+        post: operations["createCase"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cases/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Своё обращение и состояние AI
+         * @description Контракт будущей реализации. Владелец/назначение и переход проверяются сервером; чужой объект — 404. Состояние, роль, оплата и владелец не принимаются из запроса.
+         */
+        get: operations["getCase"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cases/{id}/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Диалог своего обращения
+         * @description Контракт будущей реализации. Владелец/назначение и переход проверяются сервером; чужой объект — 404. Состояние, роль, оплата и владелец не принимаются из запроса.
+         */
+        get: operations["listMessages"];
+        put?: never;
+        /**
+         * Отправить сообщение
+         * @description Только владелец в draft/clarifying, ai_state не thinking. Сохраняет сообщение, ставит Celery-задачу по версии, возвращает thinking; опрос GET обращения/сообщений. После failed разрешена повторная отправка текста как нового сообщения, старый источник не переписывается.
+         */
+        post: operations["sendMessage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cases/{id}/documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Загрузить документ
+         * @description Только владелец до подтверждения карточки. JPEG/PNG/UTF-8 text; содержимое проверяет S4. Ошибки типа/размера/числа файлов — 400. После подтверждения —409. Лимиты задаст S4, замена исходников не предусмотрена.
+         */
+        post: operations["uploadDocument"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cases/{id}/documents/{docId}/content": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Получить разрешённое содержимое документа
+         * @description Владелец либо текущий ведущий юрист. Проверяющий получает только подготовленную безопасную редакцию, иначе404; подмена docId/родителя или истёкшее назначение —404. Никакого публичного storage URL. Пример text/plain — синтетика.
+         */
+        get: operations["downloadDocument"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cases/{id}/card": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Карточка с цитатами
+         * @description Контракт будущей реализации. Владелец/назначение и переход проверяются сервером; чужой объект — 404. Состояние, роль, оплата и владелец не принимаются из запроса.
+         */
+        get: operations["getCard"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cases/{id}/card/facts/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Исправить факт
+         * @description Только владелец в card_ready; статус факта user_edited. После card_confirmed —409. Нельзя подменять исходную цитату или источник через запрос.
+         */
+        patch: operations["editFact"];
+        trace?: never;
+    };
+    "/api/cases/{id}/card/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Подтвердить версию карточки
+         * @description card_ready → card_confirmed, только при заполненных обязательных фактах. Неполнота/устаревшая версия —409 с details.fields. Факты и ссылки на исходники замораживаются.
+         */
+        post: operations["confirmCard"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cases/{id}/company": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Проверка компании
+         * @description Контракт будущей реализации. Владелец/назначение и переход проверяются сервером; чужой объект — 404. Состояние, роль, оплата и владелец не принимаются из запроса.
+         */
+        get: operations["getCompany"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cases/{id}/paths": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Три доступных пути
+         * @description До подтверждения карточки409; claim доступен только active. При unavailable проверки компании путь не блокирует self_guided; соответствующее объяснение обязательно.
+         */
+        get: operations["getPaths"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cases/{id}/path": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Выбрать путь
+         * @description Владелец после подтверждения и по разрешённым переходам. specialist переводит в in_pool, но НЕ создаёт и не публикует PoolCard. Для неё нужен отдельный POST /pool; повторный выбор не создаёт дубликатов.
+         */
+        post: operations["choosePath"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cases/{id}/plan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * План Реши сам
+         * @description Контракт будущей реализации. Владелец/назначение и переход проверяются сервером; чужой объект — 404. Состояние, роль, оплата и владелец не принимаются из запроса.
+         */
+        get: operations["getPlan"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cases/{id}/claim": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Своя претензия и версии
+         * @description Контракт будущей реализации. Владелец/назначение и переход проверяются сервером; чужой объект — 404. Состояние, роль, оплата и владелец не принимаются из запроса.
+         */
+        get: operations["getClaim"];
+        put?: never;
+        /**
+         * Создать черновик претензии
+         * @description claim_draft и подтверждённая карточка. Асинхронный draft_claim; GET обращения показывает ai_state, GET claim —готовую версию; до готовности GET claim возвращает409.
+         */
+        post: operations["createClaim"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cases/{id}/claim/personal-data": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Подтвердить персональные данные
+         * @description Контракт будущей реализации. Владелец/назначение и переход проверяются сервером; чужой объект — 404. Состояние, роль, оплата и владелец не принимаются из запроса.
+         */
+        put: operations["confirmPersonalData"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cases/{id}/claim/submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Передать на проверку
+         * @description Подтверждённая версия и ПД, явное согласие. Полный контракт волн3–4 создаёт demo hold сервером до claim_in_review; P0 без B6/B8 не раскрывает данные реальному юристу (этапность в decisions). Клиент не задаёт paid/hold/state.
+         */
+        post: operations["submitClaim"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cases/{id}/claim/accept-edits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Принять конкретную правку
+         * @description Контракт будущей реализации. Владелец/назначение и переход проверяются сервером; чужой объект — 404. Состояние, роль, оплата и владелец не принимаются из запроса.
+         */
+        post: operations["acceptClaimEdits"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cases/{id}/claim/reject-edits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Вернуть правку с комментарием
+         * @description Контракт будущей реализации. Владелец/назначение и переход проверяются сервером; чужой объект — 404. Состояние, роль, оплата и владелец не принимаются из запроса.
+         */
+        post: operations["rejectClaimEdits"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cases/{id}/claim/mark-sent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Отметить отправку
+         * @description Контракт будущей реализации. Владелец/назначение и переход проверяются сервером; чужой объект — 404. Состояние, роль, оплата и владелец не принимаются из запроса.
+         */
+        post: operations["markClaimSent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cases/{id}/claim/outcome": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Отметить исход
+         * @description Контракт будущей реализации. Владелец/назначение и переход проверяются сервером; чужой объект — 404. Состояние, роль, оплата и владелец не принимаются из запроса.
+         */
+        post: operations["recordClaimOutcome"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/lawyer/claims": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Общая очередь без контактов
+         * @description Только lawyer. Свободные claim_in_review; закрытая схема без owner_id, текста, ПД, источников/файлов.
+         */
+        get: operations["listReviewQueue"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/lawyer/claims/{id}/take": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Атомарно взять претензию
+         * @description Свободная претензия, действующее основание и demo hold; запрет виновному faulty-юристу. Второй take —409; таймаут4ч.
+         */
+        post: operations["takeClaim"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/lawyer/claims/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Материалы своей проверки
+         * @description Только текущее назначение, срок не истёк. Контакты запрещены product10.5: безопасный template_text с placeholders и очищенные факты; только безопасные редакции документов, оригиналы при отсутствии redaction не выдаются.
+         */
+        get: operations["getReviewClaim"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/lawyer/claims/{id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Утвердить проверяемую версию
+         * @description Контракт будущей реализации. Владелец/назначение и переход проверяются сервером; чужой объект — 404. Состояние, роль, оплата и владелец не принимаются из запроса.
+         */
+        post: operations["approveClaim"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/lawyer/claims/{id}/edit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Исправить шаблон с комментарием
+         * @description Контракт будущей реализации. Владелец/назначение и переход проверяются сервером; чужой объект — 404. Состояние, роль, оплата и владелец не принимаются из запроса.
+         */
+        post: operations["editClaim"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cases/{id}/pool": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Подготовить карточку к модерации
+         * @description Только выбранный specialist/in_pool. Одна активная PoolCard на Case: повтор того же snapshot возвращает ту же запись без повторной публикации. Очистка →сканер →pending; только модератор делает approved, никакой автоматической публикации. GET Case.pool показывает статус.
+         */
+        post: operations["publishPool"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/lawyer/pool": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Обезличенный пул
+         * @description Только lawyer, только approved; без ссылок на Case/Fact/Document и без ПД.
+         */
+        get: operations["listPool"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/lawyer/pool/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Обезличенная карточка
+         * @description Контракт будущей реализации. Владелец/назначение и переход проверяются сервером; чужой объект — 404. Состояние, роль, оплата и владелец не принимаются из запроса.
+         */
+        get: operations["getPoolCard"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/lawyer/pool/{id}/offers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Отправить предложение
+         * @description Один lawyer —одно Offer на PoolCard, окно48ч. Проверявший претензию может предложить лишь при отсутствии faulty и отказе/нет ответа; нарушение409.
+         */
+        post: operations["createOffer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cases/{id}/offers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Предложения своего обращения
+         * @description Владелец видит максимум5 предложений по внутреннему рейтингу; сам рейтинг не выдаётся.
+         */
+        get: operations["listOffers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cases/{id}/offers/{offerId}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Выбрать единственного исполнителя
+         * @description has_offers, Offer относится к этому Case, явное согласие, server-side demo hold; атомарно выбирает одного юриста. Повтор/гонка второго принятия409.
+         */
+        post: operations["acceptOffer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/lawyer/cases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Закреплённые дела
+         * @description Контракт будущей реализации. Владелец/назначение и переход проверяются сервером; чужой объект — 404. Состояние, роль, оплата и владелец не принимаются из запроса.
+         */
+        get: operations["listLawyerCases"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/lawyer/cases/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Данные закреплённого дела
+         * @description Только выбранный юрист после согласия/hold в offer_accepted, in_progress, work_submitted. До выбора/при потере назначения404. Доступ после окончания не расширяется до согласования правил.
+         */
+        get: operations["getLawyerCase"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/lawyer/cases/{id}/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Начать ведение дела
+         * @description offer_accepted →in_progress, только выбранный юрист. Дополнение чернового списка K1 для существующего перехода.
+         */
+        post: operations["startWork"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/lawyer/cases/{id}/submit-work": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Сдать работу
+         * @description in_progress →work_submitted, выбранный юрист прикладывает текст результата. Версия и время запускают3-дневное окно приёмки.
+         */
+        post: operations["submitWork"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cases/{id}/work/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Принять результат работы
+         * @description Только владелец в work_submitted; сервер принимает конкретную версию, выполняет release demo hold. Автоприёмка через3дня —внутреннее событие, не клиентский флаг.
+         */
+        post: operations["acceptWork"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cases/{id}/close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Закрыть своё обращение
+         * @description Существующий переход активное →closed. Нельзя обходить незавершённый hold; его завершение/возврат и спорные случаи требуют согласованной политики (вопрос K1 в assumptions), пока такое действие не предлагается в available_actions.
+         */
+        post: operations["closeCase"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -54,8 +786,1086 @@ export interface components {
                 redis: boolean;
             };
         };
+        /**
+         * @example draft
+         * @enum {string}
+         */
+        CaseState: "draft" | "clarifying" | "card_ready" | "card_confirmed" | "self_guided" | "claim_draft" | "in_pool" | "closed" | "claim_in_review" | "claim_approved" | "claim_edited" | "awaiting_response" | "resolved" | "no_response" | "has_offers" | "no_offers" | "offer_accepted" | "in_progress" | "work_submitted" | "completed" | "disputed";
+        /**
+         * @example idle
+         * @enum {string}
+         */
+        AiState: "idle" | "thinking" | "failed";
+        /**
+         * @example self_guided
+         * @enum {string}
+         */
+        CasePath: "self_guided" | "claim" | "specialist";
+        /**
+         * @example found
+         * @enum {string}
+         */
+        FactStatus: "found" | "not_found" | "user_edited";
+        /**
+         * @description Целое число копеек RUB, без float. Лимиты и цены проверяет сервер.
+         * @example 6800000
+         */
+        MoneyKopecks: number;
+        /**
+         * @example send_message
+         * @enum {string}
+         */
+        Action: "send_message" | "upload_document" | "confirm_card" | "choose_path" | "create_claim" | "confirm_personal_data" | "submit_claim" | "accept_edits" | "reject_edits" | "mark_sent" | "record_outcome" | "publish_pool" | "accept_offer" | "take_claim" | "approve_claim" | "edit_claim" | "start_work" | "submit_work" | "accept_work" | "close_case";
+        /** @example 1 */
+        Version: number;
+        ConsentInput: {
+            /**
+             * @example true
+             * @constant
+             */
+            accepted: true;
+            /** @example demo-v1 */
+            text_version: string;
+        };
+        VersionInput: {
+            /** @description Ожидаемая Case.version, не номер ClaimVersion и не версия назначения. */
+            expected_version: components["schemas"]["Version"];
+        };
+        ConsentVersionInput: {
+            /** @description Ожидаемая Case.version, не номер ClaimVersion и не версия назначения. */
+            expected_version: components["schemas"]["Version"];
+            consent: components["schemas"]["ConsentInput"];
+        };
+        /**
+         * @example {
+         *       "fields": [
+         *         "payment_date"
+         *       ]
+         *     }
+         */
+        ErrorDetails: {
+            [key: string]: string[];
+        };
+        ApiError: {
+            /** @example invalid_transition */
+            code: string;
+            /** @example Действие недоступно в текущем состоянии */
+            message: string;
+            details: components["schemas"]["ErrorDetails"];
+        };
+        /**
+         * @example {
+         *       "id": "00000000-0000-4000-8000-000000000001",
+         *       "state": "card_ready",
+         *       "path": null,
+         *       "ai_state": "idle",
+         *       "version": 2,
+         *       "created_at": "2026-11-15T10:00:00Z",
+         *       "updated_at": "2026-11-15T10:00:00Z",
+         *       "available_actions": [
+         *         "confirm_card",
+         *         "close_case"
+         *       ]
+         *     }
+         */
+        CaseSummary: {
+            /**
+             * Format: uuid
+             * @example 00000000-0000-4000-8000-000000000001
+             */
+            id: string;
+            state: components["schemas"]["CaseState"];
+            path: components["schemas"]["CasePath"] | null;
+            ai_state: components["schemas"]["AiState"];
+            version: components["schemas"]["Version"];
+            /**
+             * Format: date-time
+             * @example 2026-11-15T10:00:00Z
+             */
+            created_at: string;
+            /**
+             * Format: date-time
+             * @example 2026-11-15T10:00:00Z
+             */
+            updated_at: string;
+            available_actions: components["schemas"]["Action"][];
+        };
+        /**
+         * @example {
+         *       "id": "00000000-0000-4000-8000-000000000001",
+         *       "state": "work_submitted",
+         *       "path": "specialist",
+         *       "ai_state": "idle",
+         *       "version": 10,
+         *       "created_at": "2026-11-15T10:00:00Z",
+         *       "updated_at": "2026-11-15T10:00:00Z",
+         *       "available_actions": [
+         *         "accept_work"
+         *       ],
+         *       "card_confirmed_at": "2026-11-15T09:00:00Z",
+         *       "pool": null,
+         *       "work": {
+         *         "version": 1,
+         *         "text": "Подготовлен демонстрационный пакет документов.",
+         *         "submitted_at": "2026-11-15T10:00:00Z"
+         *       }
+         *     }
+         */
+        CaseDetail: {
+            /**
+             * Format: uuid
+             * @example 00000000-0000-4000-8000-000000000001
+             */
+            id: string;
+            state: components["schemas"]["CaseState"];
+            path: components["schemas"]["CasePath"] | null;
+            ai_state: components["schemas"]["AiState"];
+            version: components["schemas"]["Version"];
+            /**
+             * Format: date-time
+             * @example 2026-11-15T10:00:00Z
+             */
+            created_at: string;
+            /**
+             * Format: date-time
+             * @example 2026-11-15T10:00:00Z
+             */
+            updated_at: string;
+            available_actions: components["schemas"]["Action"][];
+            card_confirmed_at: string | null;
+            pool: components["schemas"]["OwnerPoolStatus"] | null;
+            work: components["schemas"]["WorkResult"] | null;
+        };
+        CreateCaseInput: {
+            /** @example Оплатила вымышленный курс, хочу вернуть деньги. */
+            message: string;
+            consent: components["schemas"]["ConsentInput"];
+        };
+        /**
+         * @example {
+         *       "id": "00000000-0000-4000-8000-000000000002",
+         *       "author": "user",
+         *       "text": "Оплатила вымышленный курс 1 октября. Учебный проект Демо. Стоимость 68000 рублей.",
+         *       "created_at": "2026-11-15T10:00:00Z"
+         *     }
+         */
+        Message: {
+            /**
+             * Format: uuid
+             * @example 00000000-0000-4000-8000-000000000002
+             */
+            id: string;
+            /**
+             * @example user
+             * @enum {string}
+             */
+            author: "user" | "ai";
+            /** @example Уточните дату оплаты вымышленного курса. */
+            text: string;
+            /**
+             * Format: date-time
+             * @example 2026-11-15T10:00:00Z
+             */
+            created_at: string;
+        };
+        /**
+         * @example {
+         *       "text": "Оплатила вымышленный курс 1 октября. Учебный проект Демо. Стоимость 68000 рублей.",
+         *       "expected_version": 1
+         *     }
+         */
+        MessageInput: {
+            /** @example Оплатила вымышленный курс 1 октября. */
+            text: string;
+            /** @description Ожидаемая Case.version, не номер ClaimVersion и не версия назначения. */
+            expected_version: components["schemas"]["Version"];
+        };
+        MessageAccepted: {
+            message: components["schemas"]["Message"];
+            case: components["schemas"]["CaseSummary"];
+        };
+        /**
+         * @example {
+         *       "id": "00000000-0000-4000-8000-000000000003",
+         *       "filename": "demo-receipt.txt",
+         *       "content_type": "text/plain",
+         *       "size_bytes": 128,
+         *       "created_at": "2026-11-15T10:00:00Z"
+         *     }
+         */
+        DocumentMetadata: {
+            /**
+             * Format: uuid
+             * @example 00000000-0000-4000-8000-000000000003
+             */
+            id: string;
+            /** @example demo-receipt.txt */
+            filename: string;
+            /**
+             * @example image/jpeg
+             * @enum {string}
+             */
+            content_type: "image/jpeg" | "image/png" | "text/plain";
+            /** @example 128 */
+            size_bytes: number;
+            /**
+             * Format: date-time
+             * @example 2026-11-15T10:00:00Z
+             */
+            created_at: string;
+        };
+        FactSource: {
+            /**
+             * @example message
+             * @enum {string}
+             */
+            kind: "message" | "document";
+            /**
+             * Format: uuid
+             * @example 00000000-0000-4000-8000-000000000002
+             */
+            id: string;
+            source_version: components["schemas"]["Version"];
+        };
+        /** @description found: непустое значение, источник и дословная цитата обязательны. not_found: value/source/quote=null. user_edited: непустое значение, источник может отсутствовать; редактирует владелец. */
+        Fact: {
+            /** @example company_name */
+            key: string;
+            value: string | null;
+            status: components["schemas"]["FactStatus"];
+            source: components["schemas"]["FactSource"] | null;
+            source_quote: string | null;
+            /** @example true */
+            required: boolean;
+        } & (unknown & unknown & unknown);
+        /**
+         * @example {
+         *       "version": 1,
+         *       "confirmed_at": null,
+         *       "facts": [
+         *         {
+         *           "key": "company_name",
+         *           "value": "Учебный проект Демо",
+         *           "status": "found",
+         *           "source": {
+         *             "kind": "message",
+         *             "id": "00000000-0000-4000-8000-000000000002",
+         *             "source_version": 1
+         *           },
+         *           "source_quote": "Учебный проект Демо",
+         *           "required": true
+         *         },
+         *         {
+         *           "key": "payment_date",
+         *           "value": null,
+         *           "status": "not_found",
+         *           "source": null,
+         *           "source_quote": null,
+         *           "required": true
+         *         }
+         *       ],
+         *       "missing_required_fields": [
+         *         "payment_date"
+         *       ]
+         *     }
+         */
+        Card: {
+            version: components["schemas"]["Version"];
+            confirmed_at: string | null;
+            facts: components["schemas"]["Fact"][];
+            missing_required_fields: string[];
+        };
+        EditFactInput: {
+            /** @example Учебный проект Демо */
+            value: string;
+            /** @description Ожидаемая Case.version, не номер ClaimVersion и не версия назначения. */
+            expected_version: components["schemas"]["Version"];
+        };
+        /**
+         * @example active
+         * @enum {string}
+         */
+        CompanyStatus: "active" | "liquidating" | "bankrupt" | "unavailable";
+        CompanyCheck: {
+            status: components["schemas"]["CompanyStatus"];
+            name: string | null;
+            inn: string | null;
+            registered_on: string | null;
+            /** @example demo-fixture */
+            source: string;
+            /**
+             * Format: date-time
+             * @example 2026-11-15T10:00:00Z
+             */
+            checked_at: string;
+            /** @example true */
+            is_demo: boolean;
+        };
+        PathOption: {
+            path: components["schemas"]["CasePath"];
+            /** @example Реши сам */
+            title: string;
+            /** @example true */
+            available: boolean;
+            reason: string | null;
+            /** @example 1 */
+            estimated_days: number;
+            price_kopecks: components["schemas"]["MoneyKopecks"] | null;
+        };
+        PathInput: {
+            path: components["schemas"]["CasePath"];
+            /** @description Ожидаемая Case.version, не номер ClaimVersion и не версия назначения. */
+            expected_version: components["schemas"]["Version"];
+        };
+        LegalNorm: {
+            /** @example demo-rule-1 */
+            id: string;
+            /** @example Демонстрационное правило */
+            title: string;
+            /**
+             * Format: uri
+             * @example https://example.invalid/demo-rule
+             */
+            url: string;
+            /** @example false */
+            verified_by_lawyer: boolean;
+        };
+        PlanStep: {
+            /** @example 1 */
+            order: number;
+            /** @example Сохраните подтверждение оплаты. */
+            text: string;
+            due_on: string | null;
+            documents: string[];
+            /** @example Демонстрационная компания */
+            destination: string;
+            norms: components["schemas"]["LegalNorm"][];
+        };
+        SelfGuidedPlan: {
+            version: components["schemas"]["Version"];
+            steps: components["schemas"]["PlanStep"][];
+            /** @example Не является юридической консультацией. Демонстрационные нормы не проверены юристом. */
+            disclaimer: string;
+        };
+        /**
+         * @example {
+         *       "full_name": "Демо Пользователь",
+         *       "reply_address": "Вымышленный город, учебный адрес",
+         *       "contract_reference": "DEMO-CONTRACT-1"
+         *     }
+         */
+        ClaimPersonalData: {
+            /** @example Демо Пользователь */
+            full_name: string;
+            /** @example Вымышленный город, учебный адрес */
+            reply_address: string;
+            /** @example DEMO-CONTRACT-1 */
+            contract_reference: string;
+        };
+        PersonalDataInput: {
+            /** @description Ожидаемая Case.version, не номер ClaimVersion и не версия назначения. */
+            expected_version: components["schemas"]["Version"];
+            data: components["schemas"]["ClaimPersonalData"];
+            /**
+             * @example true
+             * @constant
+             */
+            confirmed: true;
+        };
+        ClaimVersion: {
+            version: components["schemas"]["Version"];
+            /**
+             * @example ai
+             * @enum {string}
+             */
+            author: "ai" | "lawyer";
+            /** @example Демонстрационная претензия по вымышленному курсу. */
+            text: string;
+            comment: string | null;
+            /**
+             * Format: date-time
+             * @example 2026-11-15T10:00:00Z
+             */
+            created_at: string;
+        };
+        /**
+         * @example {
+         *       "id": "00000000-0000-4000-8000-000000000004",
+         *       "case_id": "00000000-0000-4000-8000-000000000001",
+         *       "case_version": 3,
+         *       "current_version": 1,
+         *       "versions": [
+         *         {
+         *           "version": 1,
+         *           "author": "ai",
+         *           "text": "Демонстрационная претензия по вымышленному курсу. Заявитель: Демо Пользователь.",
+         *           "comment": null,
+         *           "created_at": "2026-11-15T10:00:00Z"
+         *         }
+         *       ],
+         *       "personal_data": {
+         *         "full_name": "Демо Пользователь",
+         *         "reply_address": "Вымышленный город, учебный адрес",
+         *         "contract_reference": "DEMO-CONTRACT-1"
+         *       },
+         *       "personal_data_confirmed": true,
+         *       "faulty": false,
+         *       "submitted_at": null,
+         *       "sent_on": null,
+         *       "response_due_on": null,
+         *       "available_actions": [
+         *         "submit_claim"
+         *       ]
+         *     }
+         */
+        Claim: {
+            /**
+             * Format: uuid
+             * @example 00000000-0000-4000-8000-000000000004
+             */
+            id: string;
+            /**
+             * Format: uuid
+             * @example 00000000-0000-4000-8000-000000000001
+             */
+            case_id: string;
+            /** @description Текущая Case.version, используется как expected_version в командах. */
+            case_version: components["schemas"]["Version"];
+            current_version: components["schemas"]["Version"];
+            versions: components["schemas"]["ClaimVersion"][];
+            personal_data: components["schemas"]["ClaimPersonalData"] | null;
+            /** @example false */
+            personal_data_confirmed: boolean;
+            /** @example false */
+            faulty: boolean;
+            submitted_at: string | null;
+            sent_on: string | null;
+            response_due_on: string | null;
+            available_actions: components["schemas"]["Action"][];
+        };
+        ClaimAccepted: {
+            /**
+             * Format: uuid
+             * @example 00000000-0000-4000-8000-000000000004
+             */
+            claim_id: string;
+            case: components["schemas"]["CaseSummary"];
+        };
+        ClaimVersionInput: {
+            /** @description Ожидаемая Case.version, не номер ClaimVersion и не версия назначения. */
+            expected_version: components["schemas"]["Version"];
+            /** @description Номер просматриваемой неизменяемой ClaimVersion. */
+            claim_version: components["schemas"]["Version"];
+        };
+        SubmitClaimInput: {
+            /** @description Ожидаемая Case.version, не номер ClaimVersion и не версия назначения. */
+            expected_version: components["schemas"]["Version"];
+            /** @description Номер просматриваемой неизменяемой ClaimVersion. */
+            claim_version: components["schemas"]["Version"];
+            consent: components["schemas"]["ConsentInput"];
+        };
+        RejectEditsInput: {
+            /** @description Ожидаемая Case.version, не номер ClaimVersion и не версия назначения. */
+            expected_version: components["schemas"]["Version"];
+            /** @description Номер просматриваемой неизменяемой ClaimVersion. */
+            claim_version: components["schemas"]["Version"];
+            /** @example Уточните основание требования. */
+            comment: string;
+        };
+        MarkSentInput: {
+            /** @description Ожидаемая Case.version, не номер ClaimVersion и не версия назначения. */
+            expected_version: components["schemas"]["Version"];
+            /** @description Номер просматриваемой неизменяемой ClaimVersion. */
+            claim_version: components["schemas"]["Version"];
+            /**
+             * Format: date
+             * @example 2026-11-15
+             */
+            sent_on: string;
+        };
+        OutcomeInput: {
+            /** @description Ожидаемая Case.version, не номер ClaimVersion и не версия назначения. */
+            expected_version: components["schemas"]["Version"];
+            /**
+             * @example resolved
+             * @enum {string}
+             */
+            outcome: "resolved" | "refused" | "no_response";
+            /** @example Демонстрационный результат. */
+            comment: string;
+        };
+        /**
+         * @example {
+         *       "id": "00000000-0000-4000-8000-000000000004",
+         *       "category": "education",
+         *       "amount_kopecks": 6800000,
+         *       "queued_at": "2026-11-15T10:00:00Z",
+         *       "case_version": 4
+         *     }
+         */
+        ReviewQueueItem: {
+            /**
+             * Format: uuid
+             * @example 00000000-0000-4000-8000-000000000004
+             */
+            id: string;
+            /** @example education */
+            category: string;
+            amount_kopecks: components["schemas"]["MoneyKopecks"];
+            /**
+             * Format: date-time
+             * @example 2026-11-15T10:00:00Z
+             */
+            queued_at: string;
+            /** @description Текущая Case.version для take.expected_version. */
+            case_version: components["schemas"]["Version"];
+        };
+        ReviewVersion: {
+            version: components["schemas"]["Version"];
+            /** @example Заявитель {{claimant}} просит вернуть стоимость курса. Ответ направить {{reply_address}}. */
+            template_text: string;
+            comment: string | null;
+        };
+        ReviewDocument: {
+            /**
+             * Format: uuid
+             * @example 00000000-0000-4000-8000-000000000003
+             */
+            id: string;
+            /** @example Маскированный демонстрационный чек */
+            label: string;
+            /**
+             * @example image/jpeg
+             * @enum {string}
+             */
+            content_type: "image/jpeg" | "image/png" | "text/plain";
+            /** @example true */
+            safe_redaction_available: boolean;
+        };
+        ReviewFact: {
+            /** @example amount_kopecks */
+            key: string;
+            /** @example 68000 рублей */
+            display_value: string;
+            /** @example Стоимость курса 68000 рублей. */
+            safe_source_quote: string;
+        };
+        /**
+         * @example {
+         *       "id": "00000000-0000-4000-8000-000000000004",
+         *       "case_id": "00000000-0000-4000-8000-000000000001",
+         *       "case_version": 5,
+         *       "assignment_version": 1,
+         *       "assignment_expires_at": "2026-11-15T14:00:00Z",
+         *       "version": {
+         *         "version": 1,
+         *         "template_text": "Заявитель {{claimant}} просит вернуть стоимость курса. Ответ направить {{reply_address}}.",
+         *         "comment": null
+         *       },
+         *       "facts": [
+         *         {
+         *           "key": "amount_kopecks",
+         *           "display_value": "68000 рублей",
+         *           "safe_source_quote": "Стоимость курса 68000 рублей."
+         *         }
+         *       ],
+         *       "documents": [
+         *         {
+         *           "id": "00000000-0000-4000-8000-000000000003",
+         *           "label": "Маскированный демонстрационный чек",
+         *           "content_type": "text/plain",
+         *           "safe_redaction_available": true
+         *         }
+         *       ],
+         *       "available_actions": [
+         *         "approve_claim",
+         *         "edit_claim"
+         *       ]
+         *     }
+         */
+        ReviewClaim: {
+            /**
+             * Format: uuid
+             * @example 00000000-0000-4000-8000-000000000004
+             */
+            id: string;
+            /**
+             * Format: uuid
+             * @description Технический ID для проверки parent/безопасного content-route. Не даёт доступ к owner CaseDTO.
+             * @example 00000000-0000-4000-8000-000000000001
+             */
+            case_id: string;
+            /** @description Текущая Case.version, используется как expected_version в командах. */
+            case_version: components["schemas"]["Version"];
+            /** @description Версия текущего ReviewAssignment, отдельно от Case/ClaimVersion. */
+            assignment_version: components["schemas"]["Version"];
+            /**
+             * Format: date-time
+             * @example 2026-11-15T10:00:00Z
+             */
+            assignment_expires_at: string;
+            version: components["schemas"]["ReviewVersion"];
+            facts: components["schemas"]["ReviewFact"][];
+            documents: components["schemas"]["ReviewDocument"][];
+            available_actions: components["schemas"]["Action"][];
+        };
+        TakeClaimInput: {
+            /** @description Ожидаемая Case.version, не номер ClaimVersion и не версия назначения. */
+            expected_version: components["schemas"]["Version"];
+        };
+        ReviewActionInput: {
+            /** @description Ожидаемая Case.version, не номер ClaimVersion и не версия назначения. */
+            expected_version: components["schemas"]["Version"];
+            /** @description Версия текущего ReviewAssignment, отдельно от Case/ClaimVersion. */
+            assignment_version: components["schemas"]["Version"];
+            /** @description Номер просматриваемой неизменяемой ClaimVersion. */
+            claim_version: components["schemas"]["Version"];
+        };
+        ReviewEditInput: {
+            /** @description Ожидаемая Case.version, не номер ClaimVersion и не версия назначения. */
+            expected_version: components["schemas"]["Version"];
+            /** @description Версия текущего ReviewAssignment, отдельно от Case/ClaimVersion. */
+            assignment_version: components["schemas"]["Version"];
+            /** @description Номер просматриваемой неизменяемой ClaimVersion. */
+            claim_version: components["schemas"]["Version"];
+            /** @example Заявитель {{claimant}} требует возврата стоимости курса. */
+            template_text: string;
+            /** @example Уточнено требование. */
+            comment: string;
+        };
+        /**
+         * @example pending
+         * @enum {string}
+         */
+        PoolModerationStatus: "pending" | "approved" | "rejected";
+        OwnerPoolStatus: {
+            /**
+             * Format: uuid
+             * @example 00000000-0000-4000-8000-000000000005
+             */
+            id: string;
+            moderation_status: components["schemas"]["PoolModerationStatus"];
+            rejection_reason: string | null;
+        };
+        PublicCompany: {
+            /** @example Учебный проект Демо */
+            name: string;
+            status: components["schemas"]["CompanyStatus"];
+        };
+        AmountRange: {
+            /** @example 5000000 */
+            min_kopecks: number;
+            /** @example 10000000 */
+            max_kopecks: number;
+        };
+        SimilarCases: {
+            /** @example 34 */
+            count: number;
+            /** @example 5 */
+            cities_count: number;
+            /** @example 12 */
+            period_months: number;
+        };
+        PoolCard: {
+            /**
+             * Format: uuid
+             * @example 00000000-0000-4000-8000-000000000005
+             */
+            id: string;
+            /** @example education */
+            category: string;
+            /** @example Потребитель требует возврата оплаты за вымышленный курс. */
+            description: string;
+            /** @example Вымышленный город */
+            city: string;
+            amount_range: components["schemas"]["AmountRange"];
+            company: components["schemas"]["PublicCompany"];
+            actions_taken: string[];
+            similar_cases: components["schemas"]["SimilarCases"];
+        };
+        /**
+         * @example {
+         *       "scope": "Подготовлю документы по вымышленному делу.",
+         *       "duration_days": 7,
+         *       "price_kopecks": 1200000,
+         *       "included": [
+         *         "Подготовка документов"
+         *       ],
+         *       "excluded": [
+         *         "Представительство в суде"
+         *       ]
+         *     }
+         */
+        OfferInput: {
+            /** @example Подготовлю документы по вымышленному делу. */
+            scope: string;
+            /** @example 7 */
+            duration_days: number;
+            price_kopecks: components["schemas"]["MoneyKopecks"];
+            included: string[];
+            excluded: string[];
+        };
+        /**
+         * @example {
+         *       "id": "00000000-0000-4000-8000-000000000006",
+         *       "lawyer_label": "Демо-юрист",
+         *       "scope": "Подготовка документов",
+         *       "duration_days": 7,
+         *       "price_kopecks": 1200000,
+         *       "included": [
+         *         "Подготовка документов"
+         *       ],
+         *       "excluded": [
+         *         "Представительство"
+         *       ],
+         *       "accepted": false,
+         *       "created_at": "2026-11-15T10:00:00Z"
+         *     }
+         */
+        Offer: {
+            /**
+             * Format: uuid
+             * @example 00000000-0000-4000-8000-000000000006
+             */
+            id: string;
+            /** @example Демо-юрист */
+            lawyer_label: string;
+            /** @example Подготовка документов */
+            scope: string;
+            /** @example 7 */
+            duration_days: number;
+            price_kopecks: components["schemas"]["MoneyKopecks"];
+            included: string[];
+            excluded: string[];
+            /** @example false */
+            accepted: boolean;
+            /**
+             * Format: date-time
+             * @example 2026-11-15T10:00:00Z
+             */
+            created_at: string;
+        };
+        WorkResult: {
+            version: components["schemas"]["Version"];
+            /** @example Подготовлен демонстрационный пакет документов. */
+            text: string;
+            /**
+             * Format: date-time
+             * @example 2026-11-15T10:00:00Z
+             */
+            submitted_at: string;
+        };
+        WorkSubmissionInput: {
+            /** @description Ожидаемая Case.version, не номер ClaimVersion и не версия назначения. */
+            expected_version: components["schemas"]["Version"];
+            /** @example Подготовлен демонстрационный пакет документов. */
+            text: string;
+        };
+        /**
+         * @example {
+         *       "case": {
+         *         "id": "00000000-0000-4000-8000-000000000001",
+         *         "state": "offer_accepted",
+         *         "path": "specialist",
+         *         "ai_state": "idle",
+         *         "version": 8,
+         *         "created_at": "2026-11-15T10:00:00Z",
+         *         "updated_at": "2026-11-15T10:00:00Z",
+         *         "available_actions": [
+         *           "start_work"
+         *         ]
+         *       },
+         *       "card": {
+         *         "version": 2,
+         *         "confirmed_at": "2026-11-15T09:00:00Z",
+         *         "facts": [
+         *           {
+         *             "key": "company_name",
+         *             "value": "Учебный проект Демо",
+         *             "status": "found",
+         *             "source": {
+         *               "kind": "message",
+         *               "id": "00000000-0000-4000-8000-000000000002",
+         *               "source_version": 1
+         *             },
+         *             "source_quote": "Учебный проект Демо",
+         *             "required": true
+         *           },
+         *           {
+         *             "key": "payment_date",
+         *             "value": "2026-10-01",
+         *             "status": "user_edited",
+         *             "source": null,
+         *             "source_quote": null,
+         *             "required": true
+         *           }
+         *         ],
+         *         "missing_required_fields": []
+         *       },
+         *       "personal_data": {
+         *         "full_name": "Демо Пользователь",
+         *         "reply_address": "Вымышленный город, учебный адрес",
+         *         "contract_reference": "DEMO-CONTRACT-1"
+         *       },
+         *       "documents": [
+         *         {
+         *           "id": "00000000-0000-4000-8000-000000000003",
+         *           "filename": "demo-receipt.txt",
+         *           "content_type": "text/plain",
+         *           "size_bytes": 128,
+         *           "created_at": "2026-11-15T10:00:00Z"
+         *         }
+         *       ],
+         *       "claim": {
+         *         "id": "00000000-0000-4000-8000-000000000004",
+         *         "case_id": "00000000-0000-4000-8000-000000000001",
+         *         "case_version": 3,
+         *         "current_version": 1,
+         *         "versions": [
+         *           {
+         *             "version": 1,
+         *             "author": "ai",
+         *             "text": "Демонстрационная претензия по вымышленному курсу. Заявитель: Демо Пользователь.",
+         *             "comment": null,
+         *             "created_at": "2026-11-15T10:00:00Z"
+         *           }
+         *         ],
+         *         "personal_data": {
+         *           "full_name": "Демо Пользователь",
+         *           "reply_address": "Вымышленный город, учебный адрес",
+         *           "contract_reference": "DEMO-CONTRACT-1"
+         *         },
+         *         "personal_data_confirmed": true,
+         *         "faulty": false,
+         *         "submitted_at": null,
+         *         "sent_on": null,
+         *         "response_due_on": null,
+         *         "available_actions": [
+         *           "submit_claim"
+         *         ]
+         *       },
+         *       "accepted_offer": {
+         *         "id": "00000000-0000-4000-8000-000000000006",
+         *         "lawyer_label": "Демо-юрист",
+         *         "scope": "Подготовка документов",
+         *         "duration_days": 7,
+         *         "price_kopecks": 1200000,
+         *         "included": [
+         *           "Подготовка документов"
+         *         ],
+         *         "excluded": [
+         *           "Представительство"
+         *         ],
+         *         "accepted": true,
+         *         "created_at": "2026-11-15T10:00:00Z"
+         *       },
+         *       "work": null
+         *     }
+         */
+        LawyerCase: {
+            case: components["schemas"]["CaseSummary"];
+            card: components["schemas"]["Card"];
+            personal_data: components["schemas"]["ClaimPersonalData"];
+            documents: components["schemas"]["DocumentMetadata"][];
+            claim: components["schemas"]["Claim"] | null;
+            accepted_offer: components["schemas"]["Offer"];
+            work: components["schemas"]["WorkResult"] | null;
+        };
+        CloseCaseInput: {
+            /** @description Ожидаемая Case.version, не номер ClaimVersion и не версия назначения. */
+            expected_version: components["schemas"]["Version"];
+            /** @example Пользователь завершил обращение. */
+            reason: string;
+        };
+        Cases: {
+            items: components["schemas"]["CaseSummary"][];
+        };
+        /**
+         * @example {
+         *       "items": [
+         *         {
+         *           "id": "00000000-0000-4000-8000-000000000002",
+         *           "author": "user",
+         *           "text": "Оплатила вымышленный курс 1 октября. Учебный проект Демо. Стоимость 68000 рублей.",
+         *           "created_at": "2026-11-15T10:00:00Z"
+         *         }
+         *       ]
+         *     }
+         */
+        Messages: {
+            items: components["schemas"]["Message"][];
+        };
+        /**
+         * @example {
+         *       "items": [
+         *         {
+         *           "path": "self_guided",
+         *           "title": "Реши сам",
+         *           "available": true,
+         *           "reason": null,
+         *           "estimated_days": 1,
+         *           "price_kopecks": 0
+         *         },
+         *         {
+         *           "path": "claim",
+         *           "title": "Официальный запрос",
+         *           "available": true,
+         *           "reason": null,
+         *           "estimated_days": 1,
+         *           "price_kopecks": 149000
+         *         },
+         *         {
+         *           "path": "specialist",
+         *           "title": "Обращение к специалисту",
+         *           "available": true,
+         *           "reason": null,
+         *           "estimated_days": 2,
+         *           "price_kopecks": null
+         *         }
+         *       ]
+         *     }
+         */
+        Paths: {
+            items: components["schemas"]["PathOption"][];
+        };
+        /**
+         * @example {
+         *       "items": [
+         *         {
+         *           "id": "00000000-0000-4000-8000-000000000004",
+         *           "category": "education",
+         *           "amount_kopecks": 6800000,
+         *           "queued_at": "2026-11-15T10:00:00Z",
+         *           "case_version": 4
+         *         }
+         *       ]
+         *     }
+         */
+        ReviewQueue: {
+            items: components["schemas"]["ReviewQueueItem"][];
+        };
+        PoolCards: {
+            items: components["schemas"]["PoolCard"][];
+        };
+        Offers: {
+            items: components["schemas"]["Offer"][];
+        };
+        /**
+         * @example {
+         *       "items": [
+         *         {
+         *           "id": "00000000-0000-4000-8000-000000000001",
+         *           "state": "offer_accepted",
+         *           "path": "specialist",
+         *           "ai_state": "idle",
+         *           "version": 8,
+         *           "created_at": "2026-11-15T10:00:00Z",
+         *           "updated_at": "2026-11-15T10:00:00Z",
+         *           "available_actions": [
+         *             "start_work"
+         *           ]
+         *         }
+         *       ]
+         *     }
+         */
+        LawyerCases: {
+            items: components["schemas"]["CaseSummary"][];
+        };
+        ConfirmCardInput: {
+            /** @description Ожидаемая Case.version. */
+            expected_version: components["schemas"]["Version"];
+            /** @description Просмотренная Card.version. */
+            card_version: components["schemas"]["Version"];
+        };
+        AcceptWorkInput: {
+            /** @description Ожидаемая Case.version. */
+            expected_version: components["schemas"]["Version"];
+            /** @description Версия WorkSubmission, которую просмотрел и принимает владелец. */
+            work_version: components["schemas"]["Version"];
+        };
     };
-    responses: never;
+    responses: {
+        /** @description Некорректные данные */
+        Error400: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "code": "validation_error",
+                 *       "message": "Некорректные данные",
+                 *       "details": {}
+                 *     }
+                 */
+                "application/json": components["schemas"]["ApiError"];
+            };
+        };
+        /** @description Необходимо войти */
+        Error401: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "code": "authentication_required",
+                 *       "message": "Необходимо войти",
+                 *       "details": {}
+                 *     }
+                 */
+                "application/json": components["schemas"]["ApiError"];
+            };
+        };
+        /** @description Роль не разрешает операцию */
+        Error403: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "code": "permission_denied",
+                 *       "message": "Роль не разрешает операцию",
+                 *       "details": {}
+                 *     }
+                 */
+                "application/json": components["schemas"]["ApiError"];
+            };
+        };
+        /** @description Объект не найден */
+        Error404: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "code": "not_found",
+                 *       "message": "Объект не найден",
+                 *       "details": {}
+                 *     }
+                 */
+                "application/json": components["schemas"]["ApiError"];
+            };
+        };
+        /** @description Недопустимый переход или устаревшая версия */
+        Error409: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "code": "conflict",
+                 *       "message": "Недопустимый переход или устаревшая версия",
+                 *       "details": {}
+                 *     }
+                 */
+                "application/json": components["schemas"]["ApiError"];
+            };
+        };
+    };
     parameters: never;
     requestBodies: never;
     headers: never;
@@ -107,8 +1917,8 @@ export interface operations {
                      * @example {
                      *       "status": "ready",
                      *       "checks": {
-                     *         "database": true,
-                     *         "redis": true
+                     *         "database": false,
+                     *         "redis": false
                      *       }
                      *     }
                      */
@@ -123,9 +1933,9 @@ export interface operations {
                 content: {
                     /**
                      * @example {
-                     *       "status": "not_ready",
+                     *       "status": "ready",
                      *       "checks": {
-                     *         "database": true,
+                     *         "database": false,
                      *         "redis": false
                      *       }
                      *     }
@@ -133,6 +1943,2213 @@ export interface operations {
                     "application/json": components["schemas"]["Readiness"];
                 };
             };
+        };
+    };
+    listCases: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Успешно */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "items": [
+                     *         {
+                     *           "id": "00000000-0000-4000-8000-000000000001",
+                     *           "state": "card_ready",
+                     *           "path": null,
+                     *           "ai_state": "idle",
+                     *           "version": 2,
+                     *           "created_at": "2026-11-15T10:00:00Z",
+                     *           "updated_at": "2026-11-15T10:00:00Z",
+                     *           "available_actions": [
+                     *             "confirm_card",
+                     *             "close_case"
+                     *           ]
+                     *         }
+                     *       ]
+                     *     }
+                     */
+                    "application/json": components["schemas"]["Cases"];
+                };
+            };
+            400: components["responses"]["Error400"];
+            401: components["responses"]["Error401"];
+            403: components["responses"]["Error403"];
+            404: components["responses"]["Error404"];
+            409: components["responses"]["Error409"];
+        };
+    };
+    createCase: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Значение cookie csrftoken текущей сессии (K2). Не секретный пример. */
+                "X-CSRFToken": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "message": "Оплатила вымышленный курс, хочу вернуть деньги.",
+                 *       "consent": {
+                 *         "accepted": true,
+                 *         "text_version": "demo-v1"
+                 *       }
+                 *     }
+                 */
+                "application/json": components["schemas"]["CreateCaseInput"];
+            };
+        };
+        responses: {
+            /** @description Создано */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "00000000-0000-4000-8000-000000000001",
+                     *       "state": "draft",
+                     *       "path": null,
+                     *       "ai_state": "thinking",
+                     *       "version": 1,
+                     *       "created_at": "2026-11-15T10:00:00Z",
+                     *       "updated_at": "2026-11-15T10:00:00Z",
+                     *       "available_actions": [
+                     *         "close_case"
+                     *       ],
+                     *       "card_confirmed_at": null,
+                     *       "pool": null,
+                     *       "work": null
+                     *     }
+                     */
+                    "application/json": components["schemas"]["CaseDetail"];
+                };
+            };
+            400: components["responses"]["Error400"];
+            401: components["responses"]["Error401"];
+            403: components["responses"]["Error403"];
+            404: components["responses"]["Error404"];
+            409: components["responses"]["Error409"];
+        };
+    };
+    getCase: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Успешно */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "00000000-0000-4000-8000-000000000001",
+                     *       "state": "work_submitted",
+                     *       "path": "specialist",
+                     *       "ai_state": "idle",
+                     *       "version": 10,
+                     *       "created_at": "2026-11-15T10:00:00Z",
+                     *       "updated_at": "2026-11-15T10:00:00Z",
+                     *       "available_actions": [
+                     *         "accept_work"
+                     *       ],
+                     *       "card_confirmed_at": "2026-11-15T09:00:00Z",
+                     *       "pool": null,
+                     *       "work": {
+                     *         "version": 1,
+                     *         "text": "Подготовлен демонстрационный пакет документов.",
+                     *         "submitted_at": "2026-11-15T10:00:00Z"
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["CaseDetail"];
+                };
+            };
+            400: components["responses"]["Error400"];
+            401: components["responses"]["Error401"];
+            403: components["responses"]["Error403"];
+            404: components["responses"]["Error404"];
+            409: components["responses"]["Error409"];
+        };
+    };
+    listMessages: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Успешно */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "items": [
+                     *         {
+                     *           "id": "00000000-0000-4000-8000-000000000002",
+                     *           "author": "user",
+                     *           "text": "Оплатила вымышленный курс 1 октября. Учебный проект Демо. Стоимость 68000 рублей.",
+                     *           "created_at": "2026-11-15T10:00:00Z"
+                     *         }
+                     *       ]
+                     *     }
+                     */
+                    "application/json": components["schemas"]["Messages"];
+                };
+            };
+            400: components["responses"]["Error400"];
+            401: components["responses"]["Error401"];
+            403: components["responses"]["Error403"];
+            404: components["responses"]["Error404"];
+            409: components["responses"]["Error409"];
+        };
+    };
+    sendMessage: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Значение cookie csrftoken текущей сессии (K2). Не секретный пример. */
+                "X-CSRFToken": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "text": "Оплатила вымышленный курс 1 октября. Учебный проект Демо. Стоимость 68000 рублей.",
+                 *       "expected_version": 1
+                 *     }
+                 */
+                "application/json": components["schemas"]["MessageInput"];
+            };
+        };
+        responses: {
+            /** @description Принято для асинхронной обработки */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": {
+                     *         "id": "00000000-0000-4000-8000-000000000002",
+                     *         "author": "user",
+                     *         "text": "Оплатила вымышленный курс 1 октября. Учебный проект Демо. Стоимость 68000 рублей.",
+                     *         "created_at": "2026-11-15T10:00:00Z"
+                     *       },
+                     *       "case": {
+                     *         "id": "00000000-0000-4000-8000-000000000001",
+                     *         "state": "draft",
+                     *         "path": null,
+                     *         "ai_state": "thinking",
+                     *         "version": 2,
+                     *         "created_at": "2026-11-15T10:00:00Z",
+                     *         "updated_at": "2026-11-15T10:00:00Z",
+                     *         "available_actions": [
+                     *           "close_case"
+                     *         ]
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["MessageAccepted"];
+                };
+            };
+            400: components["responses"]["Error400"];
+            401: components["responses"]["Error401"];
+            403: components["responses"]["Error403"];
+            404: components["responses"]["Error404"];
+            409: components["responses"]["Error409"];
+        };
+    };
+    uploadDocument: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Значение cookie csrftoken текущей сессии (K2). Не секретный пример. */
+                "X-CSRFToken": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "file": "Синтетический чек, только демонстрация.",
+                 *       "expected_version": 1
+                 *     }
+                 */
+                "multipart/form-data": {
+                    /** Format: binary */
+                    file: string;
+                    expected_version: components["schemas"]["Version"];
+                };
+            };
+        };
+        responses: {
+            /** @description Создано */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "00000000-0000-4000-8000-000000000003",
+                     *       "filename": "demo-receipt.txt",
+                     *       "content_type": "text/plain",
+                     *       "size_bytes": 128,
+                     *       "created_at": "2026-11-15T10:00:00Z"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["DocumentMetadata"];
+                };
+            };
+            400: components["responses"]["Error400"];
+            401: components["responses"]["Error401"];
+            403: components["responses"]["Error403"];
+            404: components["responses"]["Error404"];
+            409: components["responses"]["Error409"];
+        };
+    };
+    downloadDocument: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                docId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Разрешённое содержимое; MIME определяется проверенным файлом. */
+            200: {
+                headers: {
+                    "Content-Disposition"?: string;
+                    "X-Content-Type-Options"?: "nosniff";
+                    "Cache-Control"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /** @example Демонстрационный чек без персональных данных. */
+                    "text/plain": string;
+                    "image/png": string;
+                    "image/jpeg": string;
+                };
+            };
+            400: components["responses"]["Error400"];
+            401: components["responses"]["Error401"];
+            403: components["responses"]["Error403"];
+            404: components["responses"]["Error404"];
+            409: components["responses"]["Error409"];
+        };
+    };
+    getCard: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Успешно */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "version": 1,
+                     *       "confirmed_at": null,
+                     *       "facts": [
+                     *         {
+                     *           "key": "company_name",
+                     *           "value": "Учебный проект Демо",
+                     *           "status": "found",
+                     *           "source": {
+                     *             "kind": "message",
+                     *             "id": "00000000-0000-4000-8000-000000000002",
+                     *             "source_version": 1
+                     *           },
+                     *           "source_quote": "Учебный проект Демо",
+                     *           "required": true
+                     *         },
+                     *         {
+                     *           "key": "payment_date",
+                     *           "value": null,
+                     *           "status": "not_found",
+                     *           "source": null,
+                     *           "source_quote": null,
+                     *           "required": true
+                     *         }
+                     *       ],
+                     *       "missing_required_fields": [
+                     *         "payment_date"
+                     *       ]
+                     *     }
+                     */
+                    "application/json": components["schemas"]["Card"];
+                };
+            };
+            400: components["responses"]["Error400"];
+            401: components["responses"]["Error401"];
+            403: components["responses"]["Error403"];
+            404: components["responses"]["Error404"];
+            409: components["responses"]["Error409"];
+        };
+    };
+    editFact: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Значение cookie csrftoken текущей сессии (K2). Не секретный пример. */
+                "X-CSRFToken": string;
+            };
+            path: {
+                id: string;
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "value": "Учебный проект Демо",
+                 *       "expected_version": 1
+                 *     }
+                 */
+                "application/json": components["schemas"]["EditFactInput"];
+            };
+        };
+        responses: {
+            /** @description Успешно */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "version": 2,
+                     *       "confirmed_at": null,
+                     *       "facts": [
+                     *         {
+                     *           "key": "company_name",
+                     *           "value": "Учебный проект Демо",
+                     *           "status": "user_edited",
+                     *           "source": null,
+                     *           "source_quote": null,
+                     *           "required": true
+                     *         },
+                     *         {
+                     *           "key": "payment_date",
+                     *           "value": null,
+                     *           "status": "not_found",
+                     *           "source": null,
+                     *           "source_quote": null,
+                     *           "required": true
+                     *         }
+                     *       ],
+                     *       "missing_required_fields": [
+                     *         "payment_date"
+                     *       ]
+                     *     }
+                     */
+                    "application/json": components["schemas"]["Card"];
+                };
+            };
+            400: components["responses"]["Error400"];
+            401: components["responses"]["Error401"];
+            403: components["responses"]["Error403"];
+            404: components["responses"]["Error404"];
+            409: components["responses"]["Error409"];
+        };
+    };
+    confirmCard: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Значение cookie csrftoken текущей сессии (K2). Не секретный пример. */
+                "X-CSRFToken": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "expected_version": 2,
+                 *       "card_version": 2
+                 *     }
+                 */
+                "application/json": components["schemas"]["ConfirmCardInput"];
+            };
+        };
+        responses: {
+            /** @description Успешно */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "00000000-0000-4000-8000-000000000001",
+                     *       "state": "card_confirmed",
+                     *       "path": null,
+                     *       "ai_state": "idle",
+                     *       "version": 3,
+                     *       "created_at": "2026-11-15T10:00:00Z",
+                     *       "updated_at": "2026-11-15T10:00:00Z",
+                     *       "available_actions": [
+                     *         "choose_path",
+                     *         "close_case"
+                     *       ],
+                     *       "card_confirmed_at": "2026-11-15T09:00:00Z",
+                     *       "pool": null,
+                     *       "work": null
+                     *     }
+                     */
+                    "application/json": components["schemas"]["CaseDetail"];
+                };
+            };
+            400: components["responses"]["Error400"];
+            401: components["responses"]["Error401"];
+            403: components["responses"]["Error403"];
+            404: components["responses"]["Error404"];
+            409: components["responses"]["Error409"];
+        };
+    };
+    getCompany: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Успешно */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": "active",
+                     *       "name": null,
+                     *       "inn": null,
+                     *       "registered_on": null,
+                     *       "source": "demo-fixture",
+                     *       "checked_at": "2026-11-15T10:00:00Z",
+                     *       "is_demo": true
+                     *     }
+                     */
+                    "application/json": components["schemas"]["CompanyCheck"];
+                };
+            };
+            400: components["responses"]["Error400"];
+            401: components["responses"]["Error401"];
+            403: components["responses"]["Error403"];
+            404: components["responses"]["Error404"];
+            409: components["responses"]["Error409"];
+        };
+    };
+    getPaths: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Успешно */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "items": [
+                     *         {
+                     *           "path": "self_guided",
+                     *           "title": "Реши сам",
+                     *           "available": true,
+                     *           "reason": null,
+                     *           "estimated_days": 1,
+                     *           "price_kopecks": 0
+                     *         },
+                     *         {
+                     *           "path": "claim",
+                     *           "title": "Официальный запрос",
+                     *           "available": true,
+                     *           "reason": null,
+                     *           "estimated_days": 1,
+                     *           "price_kopecks": 149000
+                     *         },
+                     *         {
+                     *           "path": "specialist",
+                     *           "title": "Обращение к специалисту",
+                     *           "available": true,
+                     *           "reason": null,
+                     *           "estimated_days": 2,
+                     *           "price_kopecks": null
+                     *         }
+                     *       ]
+                     *     }
+                     */
+                    "application/json": components["schemas"]["Paths"];
+                };
+            };
+            400: components["responses"]["Error400"];
+            401: components["responses"]["Error401"];
+            403: components["responses"]["Error403"];
+            404: components["responses"]["Error404"];
+            409: components["responses"]["Error409"];
+        };
+    };
+    choosePath: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Значение cookie csrftoken текущей сессии (K2). Не секретный пример. */
+                "X-CSRFToken": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "path": "self_guided",
+                 *       "expected_version": 3
+                 *     }
+                 */
+                "application/json": components["schemas"]["PathInput"];
+            };
+        };
+        responses: {
+            /** @description Успешно */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "00000000-0000-4000-8000-000000000001",
+                     *       "state": "self_guided",
+                     *       "path": "self_guided",
+                     *       "ai_state": "idle",
+                     *       "version": 4,
+                     *       "created_at": "2026-11-15T10:00:00Z",
+                     *       "updated_at": "2026-11-15T10:00:00Z",
+                     *       "available_actions": [
+                     *         "choose_path",
+                     *         "close_case"
+                     *       ],
+                     *       "card_confirmed_at": "2026-11-15T09:00:00Z",
+                     *       "pool": null,
+                     *       "work": null
+                     *     }
+                     */
+                    "application/json": components["schemas"]["CaseDetail"];
+                };
+            };
+            400: components["responses"]["Error400"];
+            401: components["responses"]["Error401"];
+            403: components["responses"]["Error403"];
+            404: components["responses"]["Error404"];
+            409: components["responses"]["Error409"];
+        };
+    };
+    getPlan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Успешно */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "version": 1,
+                     *       "steps": [
+                     *         {
+                     *           "order": 1,
+                     *           "text": "Сохраните подтверждение оплаты.",
+                     *           "due_on": null,
+                     *           "documents": [
+                     *             "Чек"
+                     *           ],
+                     *           "destination": "Демонстрационная компания",
+                     *           "norms": [
+                     *             {
+                     *               "id": "demo-rule-1",
+                     *               "title": "Демонстрационное правило",
+                     *               "url": "https://example.invalid/demo-rule",
+                     *               "verified_by_lawyer": false
+                     *             }
+                     *           ]
+                     *         }
+                     *       ],
+                     *       "disclaimer": "Не является юридической консультацией. Демонстрационные нормы не проверены юристом."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["SelfGuidedPlan"];
+                };
+            };
+            400: components["responses"]["Error400"];
+            401: components["responses"]["Error401"];
+            403: components["responses"]["Error403"];
+            404: components["responses"]["Error404"];
+            409: components["responses"]["Error409"];
+        };
+    };
+    getClaim: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Успешно */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "00000000-0000-4000-8000-000000000004",
+                     *       "case_id": "00000000-0000-4000-8000-000000000001",
+                     *       "case_version": 3,
+                     *       "current_version": 1,
+                     *       "versions": [
+                     *         {
+                     *           "version": 1,
+                     *           "author": "ai",
+                     *           "text": "Демонстрационная претензия по вымышленному курсу. Заявитель: Демо Пользователь.",
+                     *           "comment": null,
+                     *           "created_at": "2026-11-15T10:00:00Z"
+                     *         }
+                     *       ],
+                     *       "personal_data": {
+                     *         "full_name": "Демо Пользователь",
+                     *         "reply_address": "Вымышленный город, учебный адрес",
+                     *         "contract_reference": "DEMO-CONTRACT-1"
+                     *       },
+                     *       "personal_data_confirmed": true,
+                     *       "faulty": false,
+                     *       "submitted_at": null,
+                     *       "sent_on": null,
+                     *       "response_due_on": null,
+                     *       "available_actions": [
+                     *         "submit_claim"
+                     *       ]
+                     *     }
+                     */
+                    "application/json": components["schemas"]["Claim"];
+                };
+            };
+            400: components["responses"]["Error400"];
+            401: components["responses"]["Error401"];
+            403: components["responses"]["Error403"];
+            404: components["responses"]["Error404"];
+            409: components["responses"]["Error409"];
+        };
+    };
+    createClaim: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Значение cookie csrftoken текущей сессии (K2). Не секретный пример. */
+                "X-CSRFToken": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "expected_version": 3
+                 *     }
+                 */
+                "application/json": components["schemas"]["VersionInput"];
+            };
+        };
+        responses: {
+            /** @description Принято для асинхронной обработки */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "claim_id": "00000000-0000-4000-8000-000000000004",
+                     *       "case": {
+                     *         "id": "00000000-0000-4000-8000-000000000001",
+                     *         "state": "claim_draft",
+                     *         "path": "claim",
+                     *         "ai_state": "thinking",
+                     *         "version": 4,
+                     *         "created_at": "2026-11-15T10:00:00Z",
+                     *         "updated_at": "2026-11-15T10:00:00Z",
+                     *         "available_actions": []
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ClaimAccepted"];
+                };
+            };
+            400: components["responses"]["Error400"];
+            401: components["responses"]["Error401"];
+            403: components["responses"]["Error403"];
+            404: components["responses"]["Error404"];
+            409: components["responses"]["Error409"];
+        };
+    };
+    confirmPersonalData: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Значение cookie csrftoken текущей сессии (K2). Не секретный пример. */
+                "X-CSRFToken": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "expected_version": 1,
+                 *       "data": {
+                 *         "full_name": "Демо Пользователь",
+                 *         "reply_address": "Вымышленный город, учебный адрес",
+                 *         "contract_reference": "DEMO-CONTRACT-1"
+                 *       },
+                 *       "confirmed": true
+                 *     }
+                 */
+                "application/json": components["schemas"]["PersonalDataInput"];
+            };
+        };
+        responses: {
+            /** @description Успешно */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "00000000-0000-4000-8000-000000000004",
+                     *       "case_id": "00000000-0000-4000-8000-000000000001",
+                     *       "case_version": 3,
+                     *       "current_version": 1,
+                     *       "versions": [
+                     *         {
+                     *           "version": 1,
+                     *           "author": "ai",
+                     *           "text": "Демонстрационная претензия по вымышленному курсу. Заявитель: Демо Пользователь.",
+                     *           "comment": null,
+                     *           "created_at": "2026-11-15T10:00:00Z"
+                     *         }
+                     *       ],
+                     *       "personal_data": {
+                     *         "full_name": "Демо Пользователь",
+                     *         "reply_address": "Вымышленный город, учебный адрес",
+                     *         "contract_reference": "DEMO-CONTRACT-1"
+                     *       },
+                     *       "personal_data_confirmed": true,
+                     *       "faulty": false,
+                     *       "submitted_at": null,
+                     *       "sent_on": null,
+                     *       "response_due_on": null,
+                     *       "available_actions": [
+                     *         "submit_claim"
+                     *       ]
+                     *     }
+                     */
+                    "application/json": components["schemas"]["Claim"];
+                };
+            };
+            400: components["responses"]["Error400"];
+            401: components["responses"]["Error401"];
+            403: components["responses"]["Error403"];
+            404: components["responses"]["Error404"];
+            409: components["responses"]["Error409"];
+        };
+    };
+    submitClaim: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Значение cookie csrftoken текущей сессии (K2). Не секретный пример. */
+                "X-CSRFToken": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "expected_version": 3,
+                 *       "claim_version": 1,
+                 *       "consent": {
+                 *         "accepted": true,
+                 *         "text_version": "demo-v1"
+                 *       }
+                 *     }
+                 */
+                "application/json": components["schemas"]["SubmitClaimInput"];
+            };
+        };
+        responses: {
+            /** @description Успешно */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "00000000-0000-4000-8000-000000000001",
+                     *       "state": "claim_in_review",
+                     *       "path": "claim",
+                     *       "ai_state": "idle",
+                     *       "version": 4,
+                     *       "created_at": "2026-11-15T10:00:00Z",
+                     *       "updated_at": "2026-11-15T10:00:00Z",
+                     *       "available_actions": [
+                     *         "close_case"
+                     *       ],
+                     *       "card_confirmed_at": "2026-11-15T09:00:00Z",
+                     *       "pool": null,
+                     *       "work": null
+                     *     }
+                     */
+                    "application/json": components["schemas"]["CaseDetail"];
+                };
+            };
+            400: components["responses"]["Error400"];
+            401: components["responses"]["Error401"];
+            403: components["responses"]["Error403"];
+            404: components["responses"]["Error404"];
+            409: components["responses"]["Error409"];
+        };
+    };
+    acceptClaimEdits: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Значение cookie csrftoken текущей сессии (K2). Не секретный пример. */
+                "X-CSRFToken": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "expected_version": 5,
+                 *       "claim_version": 1
+                 *     }
+                 */
+                "application/json": components["schemas"]["ClaimVersionInput"];
+            };
+        };
+        responses: {
+            /** @description Успешно */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "00000000-0000-4000-8000-000000000001",
+                     *       "state": "claim_approved",
+                     *       "path": "claim",
+                     *       "ai_state": "idle",
+                     *       "version": 6,
+                     *       "created_at": "2026-11-15T10:00:00Z",
+                     *       "updated_at": "2026-11-15T10:00:00Z",
+                     *       "available_actions": [
+                     *         "mark_sent",
+                     *         "close_case"
+                     *       ],
+                     *       "card_confirmed_at": "2026-11-15T09:00:00Z",
+                     *       "pool": null,
+                     *       "work": null
+                     *     }
+                     */
+                    "application/json": components["schemas"]["CaseDetail"];
+                };
+            };
+            400: components["responses"]["Error400"];
+            401: components["responses"]["Error401"];
+            403: components["responses"]["Error403"];
+            404: components["responses"]["Error404"];
+            409: components["responses"]["Error409"];
+        };
+    };
+    rejectClaimEdits: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Значение cookie csrftoken текущей сессии (K2). Не секретный пример. */
+                "X-CSRFToken": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "expected_version": 5,
+                 *       "claim_version": 1,
+                 *       "comment": "Уточните основание требования."
+                 *     }
+                 */
+                "application/json": components["schemas"]["RejectEditsInput"];
+            };
+        };
+        responses: {
+            /** @description Успешно */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "00000000-0000-4000-8000-000000000001",
+                     *       "state": "claim_in_review",
+                     *       "path": "claim",
+                     *       "ai_state": "idle",
+                     *       "version": 6,
+                     *       "created_at": "2026-11-15T10:00:00Z",
+                     *       "updated_at": "2026-11-15T10:00:00Z",
+                     *       "available_actions": [
+                     *         "close_case"
+                     *       ],
+                     *       "card_confirmed_at": "2026-11-15T09:00:00Z",
+                     *       "pool": null,
+                     *       "work": null
+                     *     }
+                     */
+                    "application/json": components["schemas"]["CaseDetail"];
+                };
+            };
+            400: components["responses"]["Error400"];
+            401: components["responses"]["Error401"];
+            403: components["responses"]["Error403"];
+            404: components["responses"]["Error404"];
+            409: components["responses"]["Error409"];
+        };
+    };
+    markClaimSent: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Значение cookie csrftoken текущей сессии (K2). Не секретный пример. */
+                "X-CSRFToken": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "expected_version": 6,
+                 *       "claim_version": 1,
+                 *       "sent_on": "2026-11-15"
+                 *     }
+                 */
+                "application/json": components["schemas"]["MarkSentInput"];
+            };
+        };
+        responses: {
+            /** @description Успешно */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "00000000-0000-4000-8000-000000000001",
+                     *       "state": "awaiting_response",
+                     *       "path": "claim",
+                     *       "ai_state": "idle",
+                     *       "version": 7,
+                     *       "created_at": "2026-11-15T10:00:00Z",
+                     *       "updated_at": "2026-11-15T10:00:00Z",
+                     *       "available_actions": [
+                     *         "record_outcome",
+                     *         "close_case"
+                     *       ],
+                     *       "card_confirmed_at": "2026-11-15T09:00:00Z",
+                     *       "pool": null,
+                     *       "work": null
+                     *     }
+                     */
+                    "application/json": components["schemas"]["CaseDetail"];
+                };
+            };
+            400: components["responses"]["Error400"];
+            401: components["responses"]["Error401"];
+            403: components["responses"]["Error403"];
+            404: components["responses"]["Error404"];
+            409: components["responses"]["Error409"];
+        };
+    };
+    recordClaimOutcome: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Значение cookie csrftoken текущей сессии (K2). Не секретный пример. */
+                "X-CSRFToken": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "expected_version": 7,
+                 *       "outcome": "resolved",
+                 *       "comment": "Демонстрационный результат."
+                 *     }
+                 */
+                "application/json": components["schemas"]["OutcomeInput"];
+            };
+        };
+        responses: {
+            /** @description Успешно */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "00000000-0000-4000-8000-000000000001",
+                     *       "state": "resolved",
+                     *       "path": "claim",
+                     *       "ai_state": "idle",
+                     *       "version": 8,
+                     *       "created_at": "2026-11-15T10:00:00Z",
+                     *       "updated_at": "2026-11-15T10:00:00Z",
+                     *       "available_actions": [
+                     *         "close_case"
+                     *       ],
+                     *       "card_confirmed_at": "2026-11-15T09:00:00Z",
+                     *       "pool": null,
+                     *       "work": null
+                     *     }
+                     */
+                    "application/json": components["schemas"]["CaseDetail"];
+                };
+            };
+            400: components["responses"]["Error400"];
+            401: components["responses"]["Error401"];
+            403: components["responses"]["Error403"];
+            404: components["responses"]["Error404"];
+            409: components["responses"]["Error409"];
+        };
+    };
+    listReviewQueue: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Успешно */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "items": [
+                     *         {
+                     *           "id": "00000000-0000-4000-8000-000000000004",
+                     *           "category": "education",
+                     *           "amount_kopecks": 6800000,
+                     *           "queued_at": "2026-11-15T10:00:00Z",
+                     *           "case_version": 4
+                     *         }
+                     *       ]
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ReviewQueue"];
+                };
+            };
+            400: components["responses"]["Error400"];
+            401: components["responses"]["Error401"];
+            403: components["responses"]["Error403"];
+            404: components["responses"]["Error404"];
+            409: components["responses"]["Error409"];
+        };
+    };
+    takeClaim: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Значение cookie csrftoken текущей сессии (K2). Не секретный пример. */
+                "X-CSRFToken": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "expected_version": 4
+                 *     }
+                 */
+                "application/json": components["schemas"]["TakeClaimInput"];
+            };
+        };
+        responses: {
+            /** @description Успешно */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "00000000-0000-4000-8000-000000000004",
+                     *       "case_id": "00000000-0000-4000-8000-000000000001",
+                     *       "case_version": 5,
+                     *       "assignment_version": 1,
+                     *       "assignment_expires_at": "2026-11-15T14:00:00Z",
+                     *       "version": {
+                     *         "version": 1,
+                     *         "template_text": "Заявитель {{claimant}} просит вернуть стоимость курса. Ответ направить {{reply_address}}.",
+                     *         "comment": null
+                     *       },
+                     *       "facts": [
+                     *         {
+                     *           "key": "amount_kopecks",
+                     *           "display_value": "68000 рублей",
+                     *           "safe_source_quote": "Стоимость курса 68000 рублей."
+                     *         }
+                     *       ],
+                     *       "documents": [
+                     *         {
+                     *           "id": "00000000-0000-4000-8000-000000000003",
+                     *           "label": "Маскированный демонстрационный чек",
+                     *           "content_type": "text/plain",
+                     *           "safe_redaction_available": true
+                     *         }
+                     *       ],
+                     *       "available_actions": [
+                     *         "approve_claim",
+                     *         "edit_claim"
+                     *       ]
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ReviewClaim"];
+                };
+            };
+            400: components["responses"]["Error400"];
+            401: components["responses"]["Error401"];
+            403: components["responses"]["Error403"];
+            404: components["responses"]["Error404"];
+            409: components["responses"]["Error409"];
+        };
+    };
+    getReviewClaim: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Успешно */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "00000000-0000-4000-8000-000000000004",
+                     *       "case_id": "00000000-0000-4000-8000-000000000001",
+                     *       "case_version": 5,
+                     *       "assignment_version": 1,
+                     *       "assignment_expires_at": "2026-11-15T14:00:00Z",
+                     *       "version": {
+                     *         "version": 1,
+                     *         "template_text": "Заявитель {{claimant}} просит вернуть стоимость курса. Ответ направить {{reply_address}}.",
+                     *         "comment": null
+                     *       },
+                     *       "facts": [
+                     *         {
+                     *           "key": "amount_kopecks",
+                     *           "display_value": "68000 рублей",
+                     *           "safe_source_quote": "Стоимость курса 68000 рублей."
+                     *         }
+                     *       ],
+                     *       "documents": [
+                     *         {
+                     *           "id": "00000000-0000-4000-8000-000000000003",
+                     *           "label": "Маскированный демонстрационный чек",
+                     *           "content_type": "text/plain",
+                     *           "safe_redaction_available": true
+                     *         }
+                     *       ],
+                     *       "available_actions": [
+                     *         "approve_claim",
+                     *         "edit_claim"
+                     *       ]
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ReviewClaim"];
+                };
+            };
+            400: components["responses"]["Error400"];
+            401: components["responses"]["Error401"];
+            403: components["responses"]["Error403"];
+            404: components["responses"]["Error404"];
+            409: components["responses"]["Error409"];
+        };
+    };
+    approveClaim: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Значение cookie csrftoken текущей сессии (K2). Не секретный пример. */
+                "X-CSRFToken": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "expected_version": 5,
+                 *       "assignment_version": 1,
+                 *       "claim_version": 1
+                 *     }
+                 */
+                "application/json": components["schemas"]["ReviewActionInput"];
+            };
+        };
+        responses: {
+            /** @description Успешно */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "00000000-0000-4000-8000-000000000001",
+                     *       "state": "claim_approved",
+                     *       "path": "claim",
+                     *       "ai_state": "idle",
+                     *       "version": 6,
+                     *       "created_at": "2026-11-15T10:00:00Z",
+                     *       "updated_at": "2026-11-15T10:00:00Z",
+                     *       "available_actions": []
+                     *     }
+                     */
+                    "application/json": components["schemas"]["CaseSummary"];
+                };
+            };
+            400: components["responses"]["Error400"];
+            401: components["responses"]["Error401"];
+            403: components["responses"]["Error403"];
+            404: components["responses"]["Error404"];
+            409: components["responses"]["Error409"];
+        };
+    };
+    editClaim: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Значение cookie csrftoken текущей сессии (K2). Не секретный пример. */
+                "X-CSRFToken": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "expected_version": 5,
+                 *       "assignment_version": 1,
+                 *       "claim_version": 1,
+                 *       "template_text": "Заявитель {{claimant}} требует возврата стоимости курса.",
+                 *       "comment": "Уточнено требование."
+                 *     }
+                 */
+                "application/json": components["schemas"]["ReviewEditInput"];
+            };
+        };
+        responses: {
+            /** @description Успешно */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "00000000-0000-4000-8000-000000000001",
+                     *       "state": "claim_edited",
+                     *       "path": "claim",
+                     *       "ai_state": "idle",
+                     *       "version": 6,
+                     *       "created_at": "2026-11-15T10:00:00Z",
+                     *       "updated_at": "2026-11-15T10:00:00Z",
+                     *       "available_actions": []
+                     *     }
+                     */
+                    "application/json": components["schemas"]["CaseSummary"];
+                };
+            };
+            400: components["responses"]["Error400"];
+            401: components["responses"]["Error401"];
+            403: components["responses"]["Error403"];
+            404: components["responses"]["Error404"];
+            409: components["responses"]["Error409"];
+        };
+    };
+    publishPool: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Значение cookie csrftoken текущей сессии (K2). Не секретный пример. */
+                "X-CSRFToken": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "expected_version": 1,
+                 *       "consent": {
+                 *         "accepted": true,
+                 *         "text_version": "demo-v1"
+                 *       }
+                 *     }
+                 */
+                "application/json": components["schemas"]["ConsentVersionInput"];
+            };
+        };
+        responses: {
+            /** @description Принято для асинхронной обработки */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "00000000-0000-4000-8000-000000000005",
+                     *       "moderation_status": "pending",
+                     *       "rejection_reason": null
+                     *     }
+                     */
+                    "application/json": components["schemas"]["OwnerPoolStatus"];
+                };
+            };
+            400: components["responses"]["Error400"];
+            401: components["responses"]["Error401"];
+            403: components["responses"]["Error403"];
+            404: components["responses"]["Error404"];
+            409: components["responses"]["Error409"];
+        };
+    };
+    listPool: {
+        parameters: {
+            query?: {
+                category?: string;
+                city?: string;
+                min_kopecks?: number;
+                max_kopecks?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Успешно */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "items": [
+                     *         {
+                     *           "id": "00000000-0000-4000-8000-000000000005",
+                     *           "category": "education",
+                     *           "description": "Потребитель требует возврата оплаты за вымышленный курс.",
+                     *           "city": "Вымышленный город",
+                     *           "amount_range": {
+                     *             "min_kopecks": 5000000,
+                     *             "max_kopecks": 10000000
+                     *           },
+                     *           "company": {
+                     *             "name": "Учебный проект Демо",
+                     *             "status": "active"
+                     *           },
+                     *           "actions_taken": [
+                     *             "Претензия отправлена, ответа нет."
+                     *           ],
+                     *           "similar_cases": {
+                     *             "count": 34,
+                     *             "cities_count": 5,
+                     *             "period_months": 12
+                     *           }
+                     *         }
+                     *       ]
+                     *     }
+                     */
+                    "application/json": components["schemas"]["PoolCards"];
+                };
+            };
+            400: components["responses"]["Error400"];
+            401: components["responses"]["Error401"];
+            403: components["responses"]["Error403"];
+            404: components["responses"]["Error404"];
+            409: components["responses"]["Error409"];
+        };
+    };
+    getPoolCard: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Успешно */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "00000000-0000-4000-8000-000000000005",
+                     *       "category": "education",
+                     *       "description": "Потребитель требует возврата оплаты за вымышленный курс.",
+                     *       "city": "Вымышленный город",
+                     *       "amount_range": {
+                     *         "min_kopecks": 5000000,
+                     *         "max_kopecks": 10000000
+                     *       },
+                     *       "company": {
+                     *         "name": "Учебный проект Демо",
+                     *         "status": "active"
+                     *       },
+                     *       "actions_taken": [
+                     *         "Претензия отправлена, ответа нет."
+                     *       ],
+                     *       "similar_cases": {
+                     *         "count": 34,
+                     *         "cities_count": 5,
+                     *         "period_months": 12
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["PoolCard"];
+                };
+            };
+            400: components["responses"]["Error400"];
+            401: components["responses"]["Error401"];
+            403: components["responses"]["Error403"];
+            404: components["responses"]["Error404"];
+            409: components["responses"]["Error409"];
+        };
+    };
+    createOffer: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Значение cookie csrftoken текущей сессии (K2). Не секретный пример. */
+                "X-CSRFToken": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "scope": "Подготовлю документы по вымышленному делу.",
+                 *       "duration_days": 7,
+                 *       "price_kopecks": 1200000,
+                 *       "included": [
+                 *         "Подготовка документов"
+                 *       ],
+                 *       "excluded": [
+                 *         "Представительство в суде"
+                 *       ]
+                 *     }
+                 */
+                "application/json": components["schemas"]["OfferInput"];
+            };
+        };
+        responses: {
+            /** @description Создано */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "00000000-0000-4000-8000-000000000006",
+                     *       "lawyer_label": "Демо-юрист",
+                     *       "scope": "Подготовка документов",
+                     *       "duration_days": 7,
+                     *       "price_kopecks": 1200000,
+                     *       "included": [
+                     *         "Подготовка документов"
+                     *       ],
+                     *       "excluded": [
+                     *         "Представительство"
+                     *       ],
+                     *       "accepted": false,
+                     *       "created_at": "2026-11-15T10:00:00Z"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["Offer"];
+                };
+            };
+            400: components["responses"]["Error400"];
+            401: components["responses"]["Error401"];
+            403: components["responses"]["Error403"];
+            404: components["responses"]["Error404"];
+            409: components["responses"]["Error409"];
+        };
+    };
+    listOffers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Успешно */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "items": [
+                     *         {
+                     *           "id": "00000000-0000-4000-8000-000000000006",
+                     *           "lawyer_label": "Демо-юрист",
+                     *           "scope": "Подготовка документов",
+                     *           "duration_days": 7,
+                     *           "price_kopecks": 1200000,
+                     *           "included": [
+                     *             "Подготовка документов"
+                     *           ],
+                     *           "excluded": [
+                     *             "Представительство"
+                     *           ],
+                     *           "accepted": false,
+                     *           "created_at": "2026-11-15T10:00:00Z"
+                     *         }
+                     *       ]
+                     *     }
+                     */
+                    "application/json": components["schemas"]["Offers"];
+                };
+            };
+            400: components["responses"]["Error400"];
+            401: components["responses"]["Error401"];
+            403: components["responses"]["Error403"];
+            404: components["responses"]["Error404"];
+            409: components["responses"]["Error409"];
+        };
+    };
+    acceptOffer: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Значение cookie csrftoken текущей сессии (K2). Не секретный пример. */
+                "X-CSRFToken": string;
+            };
+            path: {
+                id: string;
+                offerId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "expected_version": 7,
+                 *       "consent": {
+                 *         "accepted": true,
+                 *         "text_version": "demo-v1"
+                 *       }
+                 *     }
+                 */
+                "application/json": components["schemas"]["ConsentVersionInput"];
+            };
+        };
+        responses: {
+            /** @description Успешно */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "00000000-0000-4000-8000-000000000001",
+                     *       "state": "offer_accepted",
+                     *       "path": "specialist",
+                     *       "ai_state": "idle",
+                     *       "version": 8,
+                     *       "created_at": "2026-11-15T10:00:00Z",
+                     *       "updated_at": "2026-11-15T10:00:00Z",
+                     *       "available_actions": [],
+                     *       "card_confirmed_at": "2026-11-15T09:00:00Z",
+                     *       "pool": null,
+                     *       "work": null
+                     *     }
+                     */
+                    "application/json": components["schemas"]["CaseDetail"];
+                };
+            };
+            400: components["responses"]["Error400"];
+            401: components["responses"]["Error401"];
+            403: components["responses"]["Error403"];
+            404: components["responses"]["Error404"];
+            409: components["responses"]["Error409"];
+        };
+    };
+    listLawyerCases: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Успешно */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "items": [
+                     *         {
+                     *           "id": "00000000-0000-4000-8000-000000000001",
+                     *           "state": "offer_accepted",
+                     *           "path": "specialist",
+                     *           "ai_state": "idle",
+                     *           "version": 8,
+                     *           "created_at": "2026-11-15T10:00:00Z",
+                     *           "updated_at": "2026-11-15T10:00:00Z",
+                     *           "available_actions": [
+                     *             "start_work"
+                     *           ]
+                     *         }
+                     *       ]
+                     *     }
+                     */
+                    "application/json": components["schemas"]["LawyerCases"];
+                };
+            };
+            400: components["responses"]["Error400"];
+            401: components["responses"]["Error401"];
+            403: components["responses"]["Error403"];
+            404: components["responses"]["Error404"];
+            409: components["responses"]["Error409"];
+        };
+    };
+    getLawyerCase: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Успешно */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "case": {
+                     *         "id": "00000000-0000-4000-8000-000000000001",
+                     *         "state": "offer_accepted",
+                     *         "path": "specialist",
+                     *         "ai_state": "idle",
+                     *         "version": 8,
+                     *         "created_at": "2026-11-15T10:00:00Z",
+                     *         "updated_at": "2026-11-15T10:00:00Z",
+                     *         "available_actions": [
+                     *           "start_work"
+                     *         ]
+                     *       },
+                     *       "card": {
+                     *         "version": 2,
+                     *         "confirmed_at": "2026-11-15T09:00:00Z",
+                     *         "facts": [
+                     *           {
+                     *             "key": "company_name",
+                     *             "value": "Учебный проект Демо",
+                     *             "status": "found",
+                     *             "source": {
+                     *               "kind": "message",
+                     *               "id": "00000000-0000-4000-8000-000000000002",
+                     *               "source_version": 1
+                     *             },
+                     *             "source_quote": "Учебный проект Демо",
+                     *             "required": true
+                     *           },
+                     *           {
+                     *             "key": "payment_date",
+                     *             "value": "2026-10-01",
+                     *             "status": "user_edited",
+                     *             "source": null,
+                     *             "source_quote": null,
+                     *             "required": true
+                     *           }
+                     *         ],
+                     *         "missing_required_fields": []
+                     *       },
+                     *       "personal_data": {
+                     *         "full_name": "Демо Пользователь",
+                     *         "reply_address": "Вымышленный город, учебный адрес",
+                     *         "contract_reference": "DEMO-CONTRACT-1"
+                     *       },
+                     *       "documents": [
+                     *         {
+                     *           "id": "00000000-0000-4000-8000-000000000003",
+                     *           "filename": "demo-receipt.txt",
+                     *           "content_type": "text/plain",
+                     *           "size_bytes": 128,
+                     *           "created_at": "2026-11-15T10:00:00Z"
+                     *         }
+                     *       ],
+                     *       "claim": {
+                     *         "id": "00000000-0000-4000-8000-000000000004",
+                     *         "case_id": "00000000-0000-4000-8000-000000000001",
+                     *         "case_version": 3,
+                     *         "current_version": 1,
+                     *         "versions": [
+                     *           {
+                     *             "version": 1,
+                     *             "author": "ai",
+                     *             "text": "Демонстрационная претензия по вымышленному курсу. Заявитель: Демо Пользователь.",
+                     *             "comment": null,
+                     *             "created_at": "2026-11-15T10:00:00Z"
+                     *           }
+                     *         ],
+                     *         "personal_data": {
+                     *           "full_name": "Демо Пользователь",
+                     *           "reply_address": "Вымышленный город, учебный адрес",
+                     *           "contract_reference": "DEMO-CONTRACT-1"
+                     *         },
+                     *         "personal_data_confirmed": true,
+                     *         "faulty": false,
+                     *         "submitted_at": null,
+                     *         "sent_on": null,
+                     *         "response_due_on": null,
+                     *         "available_actions": [
+                     *           "submit_claim"
+                     *         ]
+                     *       },
+                     *       "accepted_offer": {
+                     *         "id": "00000000-0000-4000-8000-000000000006",
+                     *         "lawyer_label": "Демо-юрист",
+                     *         "scope": "Подготовка документов",
+                     *         "duration_days": 7,
+                     *         "price_kopecks": 1200000,
+                     *         "included": [
+                     *           "Подготовка документов"
+                     *         ],
+                     *         "excluded": [
+                     *           "Представительство"
+                     *         ],
+                     *         "accepted": true,
+                     *         "created_at": "2026-11-15T10:00:00Z"
+                     *       },
+                     *       "work": null
+                     *     }
+                     */
+                    "application/json": components["schemas"]["LawyerCase"];
+                };
+            };
+            400: components["responses"]["Error400"];
+            401: components["responses"]["Error401"];
+            403: components["responses"]["Error403"];
+            404: components["responses"]["Error404"];
+            409: components["responses"]["Error409"];
+        };
+    };
+    startWork: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Значение cookie csrftoken текущей сессии (K2). Не секретный пример. */
+                "X-CSRFToken": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "expected_version": 8
+                 *     }
+                 */
+                "application/json": components["schemas"]["VersionInput"];
+            };
+        };
+        responses: {
+            /** @description Успешно */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "00000000-0000-4000-8000-000000000001",
+                     *       "state": "in_progress",
+                     *       "path": "specialist",
+                     *       "ai_state": "idle",
+                     *       "version": 9,
+                     *       "created_at": "2026-11-15T10:00:00Z",
+                     *       "updated_at": "2026-11-15T10:00:00Z",
+                     *       "available_actions": [
+                     *         "submit_work"
+                     *       ]
+                     *     }
+                     */
+                    "application/json": components["schemas"]["CaseSummary"];
+                };
+            };
+            400: components["responses"]["Error400"];
+            401: components["responses"]["Error401"];
+            403: components["responses"]["Error403"];
+            404: components["responses"]["Error404"];
+            409: components["responses"]["Error409"];
+        };
+    };
+    submitWork: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Значение cookie csrftoken текущей сессии (K2). Не секретный пример. */
+                "X-CSRFToken": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "expected_version": 9,
+                 *       "text": "Подготовлен демонстрационный пакет документов."
+                 *     }
+                 */
+                "application/json": components["schemas"]["WorkSubmissionInput"];
+            };
+        };
+        responses: {
+            /** @description Успешно */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "00000000-0000-4000-8000-000000000001",
+                     *       "state": "work_submitted",
+                     *       "path": "specialist",
+                     *       "ai_state": "idle",
+                     *       "version": 10,
+                     *       "created_at": "2026-11-15T10:00:00Z",
+                     *       "updated_at": "2026-11-15T10:00:00Z",
+                     *       "available_actions": []
+                     *     }
+                     */
+                    "application/json": components["schemas"]["CaseSummary"];
+                };
+            };
+            400: components["responses"]["Error400"];
+            401: components["responses"]["Error401"];
+            403: components["responses"]["Error403"];
+            404: components["responses"]["Error404"];
+            409: components["responses"]["Error409"];
+        };
+    };
+    acceptWork: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Значение cookie csrftoken текущей сессии (K2). Не секретный пример. */
+                "X-CSRFToken": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "expected_version": 10,
+                 *       "work_version": 1
+                 *     }
+                 */
+                "application/json": components["schemas"]["AcceptWorkInput"];
+            };
+        };
+        responses: {
+            /** @description Успешно */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "00000000-0000-4000-8000-000000000001",
+                     *       "state": "completed",
+                     *       "path": "specialist",
+                     *       "ai_state": "idle",
+                     *       "version": 11,
+                     *       "created_at": "2026-11-15T10:00:00Z",
+                     *       "updated_at": "2026-11-15T10:00:00Z",
+                     *       "available_actions": [
+                     *         "close_case"
+                     *       ],
+                     *       "card_confirmed_at": "2026-11-15T09:00:00Z",
+                     *       "pool": null,
+                     *       "work": {
+                     *         "version": 1,
+                     *         "text": "Подготовлен демонстрационный пакет документов.",
+                     *         "submitted_at": "2026-11-15T10:00:00Z"
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["CaseDetail"];
+                };
+            };
+            400: components["responses"]["Error400"];
+            401: components["responses"]["Error401"];
+            403: components["responses"]["Error403"];
+            404: components["responses"]["Error404"];
+            409: components["responses"]["Error409"];
+        };
+    };
+    closeCase: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Значение cookie csrftoken текущей сессии (K2). Не секретный пример. */
+                "X-CSRFToken": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "expected_version": 11,
+                 *       "reason": "Пользователь завершил обращение."
+                 *     }
+                 */
+                "application/json": components["schemas"]["CloseCaseInput"];
+            };
+        };
+        responses: {
+            /** @description Успешно */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "00000000-0000-4000-8000-000000000001",
+                     *       "state": "closed",
+                     *       "path": "self_guided",
+                     *       "ai_state": "idle",
+                     *       "version": 12,
+                     *       "created_at": "2026-11-15T10:00:00Z",
+                     *       "updated_at": "2026-11-15T10:00:00Z",
+                     *       "available_actions": [],
+                     *       "card_confirmed_at": "2026-11-15T09:00:00Z",
+                     *       "pool": null,
+                     *       "work": null
+                     *     }
+                     */
+                    "application/json": components["schemas"]["CaseDetail"];
+                };
+            };
+            400: components["responses"]["Error400"];
+            401: components["responses"]["Error401"];
+            403: components["responses"]["Error403"];
+            404: components["responses"]["Error404"];
+            409: components["responses"]["Error409"];
         };
     };
 }
