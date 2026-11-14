@@ -13,6 +13,95 @@
 | 2026-11-14 | Gunicorn для запуска Django в контейнере | `runserver` не для продакшена; единственная зависимость сверх стека | Лид |
 | 2026-11-14 | Факты — с цитатой-источником; сроки и суммы считает код; модель не принимает юридических решений | Защита от галлюцинаций в юридическом контексте | Команда |
 
+## Контракт K1 — 15.11.2026
+
+Следующие контрактные решения входят в порученную K1 и выносятся на ревью; они не утверждают реализацию или ответы лида на открытые продуктовые вопросы.
+
+| Решение | Причина и граница |
+|---|---|
+| 37 операций исходного списка+POST close/start; auth остаётся K2 | K1 фиксирует методы/DTO; close/start обеспечивают уже описанные active → closed и offer_accepted → in_progress, не новую функцию |
+| Раздельные request/read DTO, additionalProperties:false | owner/role/state/paid/назначение клиент не задаёт; available_actions рассчитывает сервер |
+| expected_version относится к Case; claim_version/assignment_version отдельные | Атомарные команды, stale409, подтверждение просмотренного результата; snapshot неизменяем |
+| UTC date-time, календарные date, целые копейки RUB | Расчёты кодом, не float/LLM |
+| AI асинхронно через Celery,202 на message/claim, опрос Case.ai_state | idle/thinking/failed отдельно от бизнес-состояния; stale задача не перезаписывает подтверждённое; после failed можно отправить текст новым сообщением |
+| Явное согласие по версии текста при create/submit/accept | Обработка и получатели не подменяются оплатой; ранняя реализация S7 —вопрос лиду |
+| specialist выбирает процесс; POST /pool идемпотентно готовит одну PoolCard | Повтор snapshot возвращает ту же запись; до очистки/сканера/модерации карточка не публикуется |
+| Отдельные ReviewQueueItem/ReviewClaim/PoolCard/Claim/LawyerCase | Очередь/пул без приватных refs; проверяющий не видит контактов по product.md § 10.5 |
+| ReviewClaim содержит template с placeholders и безопасные документы | Персонализированные текст/скан противоречат запрету контактов. Пока safe rendition не готова, оригинал проверяющему закрыт; решения/исполнителя redaction ещё нет |
+| Content-route проверяет владельца либо текущее назначение/родительский ID | Ведущему разрешённые оригиналы, проверяющему только безопасная редакция; иначе — 404. Бессрочный доступ после окончания не предполагается |
+| P0 B5 и полный платный сценарий —этапы поставки | B5 явно submit без оплаты, state-machine требует hold. До B6/B8 P0 не раскрывает данные реальному юристу; полный контракт волн 3–4 создаёт server-side demo hold. Клиент paid=true не принимается |
+| Демо-ИНН 0000000000 —только sentinel fixture | Настоящий провайдер отклоняет его до сети, случайный валидный ИНН не объявляется гарантированно вымышленным |
+
+Политика закрытия при незавершённой заморозке/споре не определена: до согласования close не предлагается для таких ситуаций; нельзя обойти release/refund общим закрытием. Это ограничение требует сверки с широким «любое активное →closed» в state-machine, а не молчаливого изменения утверждённой таблицы.
+
+Коды:400 validation_error (включая согласие/файлы),401 authentication_required,403 permission_denied (включая CSRF),404 not_found для недоступного объекта,409 conflict для состояния/версии/гонки. details —отображение ключа в список сообщений, без ПД. CSRF может отклонить запрос до объектной проверки.
+
+### Внутренние сервисы
+
+Это интерфейсы будущей реализации. case —загруженный сервером scoped snapshot с owner/version/нужными источниками, не пользовательский JSON. Возвраты проверяет DRF, модель не изменяет БД непосредственно.
+
+| Сигнатура | Вход →выход | Детерминированный mock | Ошибки | Эффекты и повтор |
+|---|---|---|---|---|
+| intake.next_step(case) | snapshot+источники →questions(max5),missing_documents,proposed Fact[] | Вымышленный курс: вопросы о дате/документах, затем факты только из входа | InvalidOutput,Timeout,StaleSnapshot | Чистый расчёт; B1 сохраняет условно по version; цитаты проверяет код; один повтор LLM, затем failed |
+| companies.check(inn) | ИНН/fixture sentinel →CompanyCheck | Sentinel →вымышленная active компания,source demo-fixture | InvalidInn; ProviderUnavailable →unavailable | Снимок сохраняет вызывающий; кэш по inn/provider; demo не ходит в сеть |
+| guidance.build_plan(case) | CardSnapshot+CompanyCheck+библиотека A3 →SelfGuidedPlan | Шаги вымышленного курса, нормы с demo-пометкой | UnconfirmedCard,MissingRule,InvalidOutput | Чистый расчёт; сроки/суммы кодом, модель связывает текст; тот же snapshot даёт тот же план |
+| guidance.draft_claim(case) | CardSnapshot+нормы/расчёты →шаблон ClaimVersion | Шаблон курса с placeholders вместо контактов | UnconfirmedCard,MissingRule,InvalidOutput,Timeout | Чистый расчёт; B5 создаёт версию по входной version; персонализация отдельным owner-слоем |
+| payments.hold(owner,purpose,reference,amount_kopecks,idempotency_key) | Проверенные owner/основание/цена →Hold(held) | Мгновенная demo-заморозка без денег | InvalidAmount,ConflictingKey | Атомарно; тот же ключ/вход →тот же Hold; несовпадение409 |
+| payments.release(hold,expected_status,idempotency_key) | Разрешённая приёмка/утверждение →released+allocations | Распределение в копейках по настройкам | InvalidTransition,ConflictingKey | Один раз атомарно; тот же ключ возвращает прежний результат; иной повтор закрытого hold —conflict |
+| payments.refund(hold,basis,idempotency_key) | Разрешённое основание →Hold(refunded) | Возврат замороженной суммы | InvalidBasis,InvalidTransition,ConflictingKey | Атомарно/идемпотентно по ключу; released не refundable автоматически; политика отмен требует решения |
+| pool.anonymize(case) | Подтверждённый snapshot →safe PoolCard draft | Описание курса без ПД,город/диапазон/компания/шаги | UnsafeOutput,InvalidOutput,StaleSnapshot | Чистый расчёт; S3 после модели; не прошло после повтора →не публиковать; B9 сохраняет pending идемпотентно на snapshot |
+
+JSON по схеме; цитаты кодом; один повтор невалидного ответа/таймаута; нормы только A3; пользовательские инструкции —данные. В логах task/duration/outcome без текстов/ПД/ключей. Цены,70% проверяющему,10% комиссии,4 часа/48 часов/3 дня —параметры будущей реализации из серверных настроек; K1 не меняет env/settings. Компания unavailable не равна active и не блокирует безопасный self_guided план.
+
+### Точные результаты внутренних сервисов
+
+Скобки ниже задают поля и типы DTO, а не новые зависимости или Python-классы. UUID — строка UUID, Version — положительное целое, Money — неотрицательное целое число копеек. Поля перечислены явно; произвольные поля результата не сохраняются.
+
+```text
+IntakeResult = {
+  questions: string[],                  // не больше 5
+  missing_documents: string[],
+  proposed_facts: Fact[],               // структура Fact из OpenAPI, со статусом и источником
+  card_ready: boolean
+}
+DraftClaimResult = {
+  input_card_version: Version,
+  template_text: string,                // с фиксированными placeholders, без контактов
+  norm_ids: string[]                    // только ID, разрешённые библиотекой A3
+}
+PoolCardDraft = {
+  category: string,
+  description: string,                 // очищенное описание, не исходный текст
+  city: string,
+  amount_range: { min_kopecks: Money, max_kopecks: Money },
+  company: { name: string, status: CompanyStatus },
+  actions_taken: string[],
+  similar_cases: { count: integer, cities_count: integer, period_months: integer }
+}
+HoldResult = {
+  id: UUID, owner_id: UUID,
+  purpose: 'claim_review' | 'legal_service',
+  reference_id: UUID, amount_kopecks: Money,
+  status: 'held' | 'released' | 'refunded',
+  idempotency_key: string
+}
+Allocation = {
+  id: UUID, hold_id: UUID,
+  kind: 'reviewer' | 'lawyer' | 'platform',
+  recipient_id: UUID | null,            // null только для внутреннего счёта платформы
+  amount_kopecks: Money
+}
+ReleaseResult = { hold: HoldResult, allocations: Allocation[] }
+RefundResult = { hold: HoldResult }
+```
+
+- **IntakeResult:** A2 выдаёт чистый результат; B1 сохраняет Message/Fact только при совпадении входной Case.version. questions становятся текстом AI-сообщения, proposed_facts — полями Card. card_ready разрешает переход в card_ready после серверной проверки источников; это не автоматическое подтверждение и не обход обязательных полей B2. Неизвестные факты имеют status=not_found и null value/source/quote.
+- **DraftClaimResult:** A4 возвращает шаблон и использованные нормы; B5 условно сохраняет новую ClaimVersion и привязку к CardSnapshot. Контакты подставляет доверенный слой только для owner/ведущего представления ClaimVersion.text; ReviewVersion.template_text сохраняет placeholders. Замена значения на произвольный пользовательский placeholder не разрешается. Обязательный набор placeholders и очистку документов нужно согласовать по вопросу redaction до реальной выдачи.
+- **PoolCardDraft:** A5 возвращает поля без DB id, private Case FK и moderation_status. B9 проверяет S3, сохраняет одну запись на snapshot, присваивает id и pending. Public PoolCard получается только из approved записи путём добавления id к явно разрешённым полям; исходные Fact/Document/ПД не присоединяются.
+- **CompanyCheck** и **SelfGuidedPlan** используют точные одноимённые схемы OpenAPI. B3 сохраняет снимок CompanyCheck; B4 сохраняет/кэширует результат плана по CardSnapshot и версии библиотеки. Внешний provider unavailable возвращает безопасный статус, а не вымышленный active.
+- **hold/release/refund:** B8 сохраняет Hold и Allocation в одной транзакции, вызывающий B6/B7/B10 связывает результат с командой Case. Эти DTO внутренние, в публичные очередь/пул не попадают. При release сумма Allocation равна hold, доли считаются кодом в копейках; остаток округления остаётся платформе. Для claim_review используются настройки доли проверяющего, для legal_service — комиссии. Никаких реальных списаний или полей платёжных реквизитов в прототипе.
+- Чистые intake/guidance/anonymize не присваивают DB id и не изменяют состояние. При повторе background job вызывающий слой проверяет snapshot и наличие сохранённого результата, не создаёт повторные версии. payments — единственные перечисленные сервисы с собственными атомарными записями; повтор по idempotency_key возвращает прежний результат, а не повторную выплату.
+
 ## K2 — сессии и роли (15.11.2026)
 
 - `accounts.User(AbstractUser)` с UUID и четырьмя ролями создаётся в `0001_initial` до зависимых моделей. Существующие БД автоматически не преобразуются. Для изолированной проверки используется отдельный compose project.
@@ -22,4 +111,4 @@
 - Лимит попыток — два независимых fixed-window RedisCache счётчика: IP и нормализованное имя аккаунта, ключи HMAC. add/incr атомарны между процессами; при недоступном cache вход закрывается 503. Счётчик IP работает до разбора тела, account — после нормализации валидатором. CSRF rejection происходит раньше, обход CSRF не становится попыткой проверки пароля. Код не логирует пароль/сырой cache URL.
 - Комплектный Caddy перезаписывает `X-NMH-Client-IP` своим remote_host, backend не имеет опубликованного порта. Только в этой конфигурации compose включает AUTH_TRUST_PROXY_HEADER; вне неё значение по умолчанию false. X-Forwarded-For не используется. Это ingress-гарантия, а не защита при публикации backend в обход Caddy или компрометации внутренней сети.
 - `seed_demo` использует четыре env-настройки паролей с публичными локальными заглушками. Повтор сохраняет пароли/роли/рейтинг; только --reset-passwords меняет пароли существующих demo-аккаунтов. Не-demo коллизия откатывает транзакцию. Команда не выдаёт superuser и не печатает пароли.
-- Auth OpenAPI использует уникальные AuthRole/AuthUser/AuthError/AuthErrorDetails, сохраняя Health/Readiness. После отдельного мержа K1 необходимо объединить auth-секцию с его 41 операцией и штатно перегенерировать клиент; K2 не перезаписывает чужой контракт и не заявляет, что K1 уже в main.
+- Auth OpenAPI использует уникальные AuthRole/AuthUser/AuthError/AuthErrorDetails, сохраняя Health/Readiness. При текущем объединении с main сохраняются все 41 операции K1 и добавляется отдельная auth-секция K2; итоговые 45 операций и штатная генерация клиента проверяются вместе. Новые записи main и существующие контрактные решения не заменяются auth-контрактом.

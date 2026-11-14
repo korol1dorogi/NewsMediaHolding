@@ -104,7 +104,8 @@ services:
   mock:
     image: stoplight/prism:5
     profiles: ["mock"]
-    command: ["mock", "-h", "0.0.0.0", "/docs/openapi.yaml"]
+    # Prism 5.15.10: avoid cluster.default.isPrimary failure in multiprocess mode.
+    command: ["mock", "-h", "0.0.0.0", "--multiprocess", "false", "/docs/openapi.yaml"]
     volumes:
       - ./docs:/docs:ro
     ports:
