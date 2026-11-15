@@ -48,6 +48,17 @@ MATRIX = {
     "api/lawyer/claims/<uuid:claim_id>/take": {"post": "lawyer_object"},
     "api/lawyer/claims/<uuid:claim_id>/approve": {"post": "lawyer_object"},
     "api/lawyer/claims/<uuid:claim_id>/edit": {"post": "lawyer_object"},
+    "api/cases/<uuid:case_id>/pool": {"post": "owner"},
+    "api/cases/<uuid:case_id>/offers": {"get": "owner"},
+    "api/cases/<uuid:case_id>/offers/<uuid:offer_id>/accept": {"post": "owner"},
+    "api/cases/<uuid:case_id>/work/accept": {"post": "owner"},
+    "api/lawyer/pool": {"get": "lawyer_list"},
+    "api/lawyer/pool/<uuid:card_id>": {"get": "lawyer_object"},
+    "api/lawyer/pool/<uuid:card_id>/offers": {"post": "lawyer_object"},
+    "api/lawyer/cases": {"get": "lawyer_list"},
+    "api/lawyer/cases/<uuid:case_id>": {"get": "lawyer_object"},
+    "api/lawyer/cases/<uuid:case_id>/start": {"post": "lawyer_object"},
+    "api/lawyer/cases/<uuid:case_id>/submit-work": {"post": "lawyer_object"},
 }
 
 ROLES = ("user", "lawyer", "moderator", "editor")
@@ -88,6 +99,8 @@ def url_for(route, world):
         .replace("<uuid:document_id>", str(world["doc"].pk))
         .replace("<uuid:claim_id>", str(world["claim"].pk))
         .replace("<str:key>", "company_name")
+        .replace("<uuid:offer_id>", "00000000-0000-4000-8000-0000000000aa")
+        .replace("<uuid:card_id>", "00000000-0000-4000-8000-0000000000bb")
     )
 
 

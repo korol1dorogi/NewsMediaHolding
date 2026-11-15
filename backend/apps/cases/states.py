@@ -92,6 +92,12 @@ def available_actions(case):
         actions.append("mark_sent")
     if case.state == "awaiting_response":
         actions.append("record_outcome")
+    if case.state == "in_pool" and getattr(case, "pool_card", None) is None:
+        actions.append("publish_pool")
+    if case.state == "has_offers":
+        actions.append("accept_offer")
+    if case.state == "work_submitted":
+        actions.append("accept_work")
     if can_close(case):
         actions.append("close_case")
     return actions
