@@ -13,8 +13,20 @@
 	}
 
 	# One origin: API and frontend share the host, so no CORS is needed.
-	handle /api/* {
+	handle_path /static/* {
+		root * /srv/admin-static
+		file_server
+	}
+
+	@admin path /admin /admin/*
+	handle @admin {
 		reverse_proxy backend:8000
+	}
+
+	handle /api/* {
+		reverse_proxy backend:8000 {
+			header_up X-NMH-Client-IP {remote_host}
+		}
 	}
 
 	handle {
