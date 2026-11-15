@@ -60,6 +60,10 @@ cp .env.example .env && docker compose up -d --build --wait   # затем http:
 | `WEB_PORT` | `8080` | Порт приложения на хосте |
 | `LLM_PROVIDER` | `mock` | `mock` или OpenAI-совместимый провайдер |
 | `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL` | пусто | Настройки реальной модели |
+| `PAYMENTS_PROVIDER` | `demo` | Провайдер оплаты. Есть только `demo`: **оплата — демонстрация**, реальные деньги не списываются |
+| `PAYMENTS_CLAIM_PRICE_KOPECKS` | `149000` | Цена претензии в копейках (ориентир 1 490 ₽) |
+| `PAYMENTS_REVIEWER_SHARE_BP` | `7000` | Доля юриста-проверяющего в базисных пунктах (70%) |
+| `PAYMENTS_PLATFORM_FEE_BP` | `1000` | Комиссия платформы со сделки с юристом (10%) |
 
 ## Как проверить качество
 
@@ -72,5 +76,7 @@ scripts/check-clean-clone.sh    # чистый клон: compose, /api/ready, e2
 CI на каждый PR: бэкенд, фронтенд, e2e, newman, gitleaks, pip-audit, npm audit — [.github/workflows/ci.yml](.github/workflows/ci.yml).
 
 ## Ограничения и допущения
+
+**Оплата — демонстрация.** Заморозка денег (`backend/apps/payments`) показывает механику «деньги заморожены до приёмки работы» без платёжного провайдера и без реальных денег.
 
 См. [docs/assumptions.md](docs/assumptions.md).

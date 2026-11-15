@@ -22,7 +22,7 @@ UUID идентификаторы; UTC ISO8601 для времени, date дл�
 | ReviewAssignment | claims/B6 | claim, lawyer, case_version, claim_version, assignment_version, expires_at, ended_at, safe materials snapshot | Текущий назначенный проверяющий | Не более одного активного назначения; take атомарен;4 часа таймаут; faulty-юрист исключён |
 | SafeReviewMaterial | claims/documents, вопрос B6/S4 | source document/version, safe rendition, checked flag | Через ReviewAssignment | Требование к будущей выдаче; без готовой безопасной редакции оригинал проверяющему закрыт |
 | Hold | payments/B8 | owner, purpose, amount_kopecks, status, reference, idempotency key | Owner+Claim либо Offer | held/released/refunded; атомарный однократный release/refund |
-| PaymentAllocation | payments/B8 | hold, recipient, amount_kopecks, kind | Через Hold | Сумма распределений равна hold; доли из настроек |
+| Allocation | payments/B8 | hold, recipient, amount_kopecks, kind | Через Hold | Сумма распределений равна hold; доли из настроек |
 | PoolCard | pool/B9 | private case FK, safe category/description/city/range/company/actions/aggregate, moderation status | Через Case.owner | Одна активная карточка на Case/snapshot; юристам только approved, без private FK/ПД |
 | Offer | pool/B10 | pool_card, lawyer, scope, duration_days, price, included/excluded, accepted_at | Юрист создаёт, владелец Case выбирает | Unique(pool_card,lawyer); одно принятое на Case; окно48 часов |
 | WorkAssignment | pool/B10 | case, accepted_offer, lawyer, version, active dates | Case.owner и выбранный юрист | Одно активное назначение; согласие+hold до раскрытия |
