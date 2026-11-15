@@ -8,6 +8,7 @@ export function Layout() {
           <Link to="/" className="font-semibold">
             Сервис обращений
           </Link>
+          <Link to="/login">Войти</Link>
         </nav>
       </header>
       <main className="mx-auto max-w-5xl px-4 py-8">
