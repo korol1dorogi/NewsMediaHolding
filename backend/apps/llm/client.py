@@ -42,6 +42,10 @@ def _remote_response(task, payload, schema_description):
     if not base_url.startswith(("https://", "http://")):
         raise LLMError("Invalid LLM provider URL")
     instructions = (_ROOT / "prompts" / "system_v1.txt").read_text(encoding="utf-8")
+    # Only explicitly registered, versioned prompts can become system instructions.
+    task_prompts = {"intake": "intake_v1.txt"}
+    if task in task_prompts:
+        instructions += "\n" + (_ROOT / "prompts" / task_prompts[task]).read_text(encoding="utf-8")
     instructions += "\nRequired JSON Schema for the response:\n" + json.dumps(schema_description)
     body = json.dumps(
         {

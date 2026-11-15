@@ -15,6 +15,7 @@ export function factLabel(key: string): string {
 export const STATE_LABELS: Record<CaseDetail["state"], string> = {
   draft: "Собираем сведения",
   clarifying: "Нужны уточнения",
+  emergency: "Срочная ситуация",
   card_ready: "Карточка готова к проверке",
   card_confirmed: "Карточка подтверждена",
   self_guided: "Реши сам",

@@ -34,7 +34,7 @@ UUID идентификаторы; UTC ISO8601 для времени, date дл�
 
 ## Состояния
 
-Case.state: draft, clarifying, card_ready, card_confirmed, self_guided, claim_draft, in_pool, closed, claim_in_review, claim_approved, claim_edited, awaiting_response, resolved, no_response, has_offers, no_offers, offer_accepted, in_progress, work_submitted, completed, disputed. Переходы строго по [машине состояний](state-machine.md); disputed остаётся в enum, хотя споры вне MVP.
+Case.state: draft, clarifying, emergency, card_ready, card_confirmed, self_guided, claim_draft, in_pool, closed, claim_in_review, claim_approved, claim_edited, awaiting_response, resolved, no_response, has_offers, no_offers, offer_accepted, in_progress, work_submitted, completed, disputed. Переходы строго по [машине состояний](state-machine.md); disputed остаётся в enum, хотя споры вне MVP.
 
 Case.ai_state: idle/thinking/failed. Case.path: self_guided/claim/specialist. CompanyCheck.status: active/liquidating/bankrupt/unavailable. PoolCard moderation: pending/approved/rejected. Hold.status: held/released/refunded. Эти enum не дают клиенту права устанавливать их значения.
 

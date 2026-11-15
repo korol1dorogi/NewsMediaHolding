@@ -30,7 +30,12 @@ def process_message(case_id, version):
     try:
         result = intake.next_step(case)
         ready = result["card_ready"]
+        urgent = result["urgent"]
+        if type(ready) is not bool or type(urgent) is not bool or (urgent and ready):
+            raise ValueError("Invalid intake result")
         reply = "Карточка готова к проверке." if ready else "\n".join(result["questions"])
+        if not urgent and result["missing_documents"]:
+            reply += "\n" + "\n".join(result["missing_documents"])
         if not reply:
             raise ValueError("Missing intake response")
     except Exception:
@@ -44,12 +49,12 @@ def process_message(case_id, version):
             return
         try:
             with transaction.atomic():
-                if apply_proposals(case, result["proposed_facts"]):
+                if not urgent and apply_proposals(case, result["proposed_facts"]):
                     case.card_version += 1
         except (KeyError, TypeError, ValueError, AttributeError):
             fail(case_id, version)
             return
-        transition(case, "card_ready" if ready else "clarifying")
+        transition(case, "emergency" if urgent else "card_ready" if ready else "clarifying")
         Message.objects.create(case=case, author="ai", text=reply)
         case.ai_state = "idle"
         case.version += 1

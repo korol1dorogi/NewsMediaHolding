@@ -69,6 +69,13 @@ export function DialogScreen() {
             AI не смог обработать сообщение. Отправьте его ещё раз — можно короче.
           </p>
         )}
+        {caseData.state === "emergency" && (
+          <p role="alert" className="rounded border border-red-300 bg-red-50 p-3">
+            Похоже, ситуация срочная. Если есть угроза — звоните 112. Если деньги списывают
+            прямо сейчас — немедленно позвоните в банк и заблокируйте карту. Приём обращения
+            остановлен; его можно закрыть.
+          </p>
+        )}
         {caseData.state === "card_ready" && (
           <p role="status" className="rounded border border-green-300 bg-green-50 p-3">
             Карточка готова.{" "}

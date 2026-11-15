@@ -12,11 +12,11 @@ from apps.cases.facts import (
     AMOUNT,
     COMPANY_NAME,
     PAYMENT_DATE,
-    SERVICE_DESCRIPTION,
     confirmed_values,
     format_rub,
     parse_amount,
     parse_date,
+    service_text,
 )
 
 from .deadlines import article_31_deadline
@@ -127,7 +127,7 @@ def build_plan(case, company_status):
     company = facts.get(COMPANY_NAME) or "компания"
     amount = parse_amount(facts.get(AMOUNT))
     paid_on = parse_date(facts.get(PAYMENT_DATE), today=case.created_at.date())
-    service = facts.get(SERVICE_DESCRIPTION)
+    service = service_text(facts)
     money = f"вернуть {format_rub(amount)}" if amount else "вернуть оплаченную сумму"
     norms = [_norm_dto(norm) for norm in select_norms(_conditions(facts))]
     proof = ["Чек или банковская выписка об оплате", "Договор, оферта или скриншот условий"]
