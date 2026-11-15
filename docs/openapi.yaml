@@ -2764,6 +2764,7 @@ components:
       enum:
         - draft
         - clarifying
+        - emergency
         - card_ready
         - card_confirmed
         - self_guided

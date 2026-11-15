@@ -14,11 +14,14 @@ from rest_framework import serializers
 from apps.cases.facts import (
     AMOUNT,
     COMPANY_NAME,
+    HAPPENED,
     PAYMENT_DATE,
+    PROMISED,
     SERVICE_DESCRIPTION,
     confirmed_values,
     parse_amount,
     parse_date,
+    service_text,
 )
 from apps.llm.client import LLMError, complete_json
 
@@ -122,7 +125,7 @@ def draft_claim(case):
         ),
         "facts": {
             key: facts[key]
-            for key in (COMPANY_NAME, SERVICE_DESCRIPTION, PAYMENT_DATE, AMOUNT)
+            for key in (COMPANY_NAME, SERVICE_DESCRIPTION, PROMISED, HAPPENED, PAYMENT_DATE, AMOUNT)
             if key in facts
         },
     }
@@ -143,7 +146,7 @@ def draft_claim(case):
             "claim",
             {
                 "company_name": facts[COMPANY_NAME],
-                "service_description": facts.get(SERVICE_DESCRIPTION) or DEFAULT_SERVICE,
+                "service_description": service_text(facts) or DEFAULT_SERVICE,
                 "payment_date": paid_on.isoformat(),
                 "amount_kopecks": amount,
                 "claim_amount_kopecks": amount,

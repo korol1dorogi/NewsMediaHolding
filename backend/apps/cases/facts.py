@@ -12,8 +12,32 @@ COMPANY_INN = "company_inn"
 SERVICE_DESCRIPTION = "service_description"
 PAYMENT_DATE = "payment_date"
 AMOUNT = "amount"
+# Keys proposed by A2 intake (backend/apps/cases/intake.py).
+PAYMENT_METHOD = "payment_method"
+PROMISED = "promised"
+HAPPENED = "happened"
+ACTIONS_TAKEN = "actions_taken"
+# Optional, filled by the user; used for the pool card and «Вы не один».
+CITY = "city"
 
-KNOWN_KEYS = (COMPANY_NAME, COMPANY_INN, SERVICE_DESCRIPTION, PAYMENT_DATE, AMOUNT)
+KNOWN_KEYS = (
+    COMPANY_NAME,
+    COMPANY_INN,
+    SERVICE_DESCRIPTION,
+    PAYMENT_DATE,
+    AMOUNT,
+    PAYMENT_METHOD,
+    PROMISED,
+    HAPPENED,
+    ACTIONS_TAKEN,
+    CITY,
+)
+
+
+def service_text(facts):
+    """What was paid for: the explicit description, otherwise what was promised (A2)."""
+    return facts.get(SERVICE_DESCRIPTION) or facts.get(PROMISED)
+
 
 _MONTHS = {
     "январ": 1,

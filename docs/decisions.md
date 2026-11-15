@@ -95,9 +95,11 @@ JSON по схеме; цитаты кодом; один повтор невал�
 ```text
 IntakeResult = {
   questions: string[],                  // не больше 5
-  missing_documents: string[],
+  missing_documents: string[],          // описание документа и причина запроса
   proposed_facts: Fact[],               // структура Fact из OpenAPI, со статусом и источником
-  card_ready: boolean
+  card_ready: boolean,
+  urgent: boolean,                      // немедленный переход в emergency
+  category: string | null               // категория случая, если установлена
 }
 DraftClaimResult = {
   input_card_version: Version,

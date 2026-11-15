@@ -23,16 +23,21 @@ test("P0: Anya goes from her story to a claim sent for review", async ({ page, b
   await page.getByRole("link", { name: "Новое обращение" }).first().click();
   await page
     .getByLabel(/Что произошло/)
-    .fill(
-      "Оплатила 68 000 ₽ компании Учебный проект Демо (ИНН 0000000000). Деньги не возвращают уже три недели.",
-    );
+    .fill("Оплатила курс в Учебный проект Демо, 68000 рублей, деньги не возвращают уже три недели.");
   await page.getByLabel(/Согласен на обработку/).check();
   await page.getByRole("button", { name: "Отправить" }).click();
   await expect(page).toHaveURL(/\/user\/cases\/[0-9a-f-]+$/);
   const caseUrl = page.url();
-  await expect(page.getByText("Когда вы оплатили услугу и что вам обещали?")).toBeVisible();
-  await page.getByLabel("Ваш ответ").fill("Оплатила 1 октября онлайн-курс по программированию.");
-  await page.getByRole("button", { name: "Отправить" }).click();
+  const dialog = page.getByRole("list", { name: "Диалог" }).getByRole("listitem");
+  const answers = [
+    "Оплатила 1 октября банковской картой.",
+    "ИНН 0000000000, обещали записанные уроки, я уже написала претензию.",
+  ];
+  for (const [index, answer] of answers.entries()) {
+    await expect(dialog).toHaveCount(2 * (index + 1)); // the AI has replied
+    await page.getByLabel("Ваш ответ").fill(answer);
+    await page.getByRole("button", { name: "Отправить" }).click();
+  }
 
   // Card: every fact has a verbatim quote; Anya checks one and confirms.
   await page.getByRole("link", { name: "Проверьте карточку" }).click();

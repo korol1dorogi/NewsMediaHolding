@@ -1,0 +1,36 @@
+{
+  "facts": [
+    {
+      "key": "company_name",
+      "value": "Учебный проект Демо",
+      "quote": "Учебный проект Демо",
+      "source_index": 0
+    },
+    {
+      "key": "amount",
+      "value": "68000 рублей",
+      "quote": "68000 рублей",
+      "source_index": 0
+    },
+    {
+      "key": "happened",
+      "value": "деньги не возвращают",
+      "quote": "деньги не возвращают",
+      "source_index": 0
+    },
+    {
+      "key": "payment_date",
+      "value": "1 октября",
+      "quote": "1 октября",
+      "source_index": 1
+    },
+    {
+      "key": "payment_method",
+      "value": "банковской картой",
+      "quote": "банковской картой",
+      "source_index": 1
+    }
+  ],
+  "urgent": false,
+  "category": "education"
+}
