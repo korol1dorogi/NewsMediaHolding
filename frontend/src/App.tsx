@@ -3,6 +3,11 @@ import { createBrowserRouter, type RouteObject, RouterProvider } from "react-rou
 import { Layout } from "@/components/Layout";
 import { Placeholder, Portal } from "@/features/auth/Portal";
 import { Login, RequireRole, SessionProvider } from "@/features/auth/session";
+import { CardScreen } from "@/features/cases/CardScreen";
+import { CaseLayout, CasesList, NewCase } from "@/features/cases/CaseLayout";
+import { ClaimScreen } from "@/features/cases/ClaimScreen";
+import { DialogScreen } from "@/features/cases/DialogScreen";
+import { PathsScreen } from "@/features/cases/PathsScreen";
 import { Home } from "@/routes/Home";
 import { NotFound } from "@/routes/NotFound";
 
@@ -24,11 +29,18 @@ export const routes: RouteObject[] = [
             path: "user",
             element: <Portal allowedRole="user" />,
             children: [
-              { index: true, element: <Placeholder /> },
-              ...["dialog", "card", "paths", "claim", "offers"].map((path) => ({
-                path,
-                element: <Placeholder />,
-              })),
+              { index: true, element: <CasesList /> },
+              { path: "new", element: <NewCase /> },
+              {
+                path: "cases/:caseId",
+                element: <CaseLayout />,
+                children: [
+                  { index: true, element: <DialogScreen /> },
+                  { path: "card", element: <CardScreen /> },
+                  { path: "paths", element: <PathsScreen /> },
+                  { path: "claim", element: <ClaimScreen /> },
+                ],
+              },
             ],
           },
         ],
