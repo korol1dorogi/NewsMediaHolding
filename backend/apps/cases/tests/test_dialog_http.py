@@ -67,15 +67,22 @@ def test_http_dialog_with_worker(live_server, client, django_user_model):
             case = poll(path)
             assert case["state"] == "card_ready"
             _, card = http(path + "/card")
-            assert card["missing_required_fields"] == ["payment_date"]
-            assert card["facts"][0]["source_quote"] == "Учебный проект Демо"
-            status, edited = http(
-                path + "/card/facts/payment_date",
-                {"value": "2 октября", "expected_version": case["version"]},
-                "PATCH",
-            )
-            assert status == 200 and edited["missing_required_fields"] == []
-            _, case = http(path)
+            assert card["missing_required_fields"] == ["amount", "company_inn", "payment_date"]
+            facts = {fact["key"]: fact for fact in card["facts"]}
+            assert facts["company_name"]["source_quote"] == "Учебный проект Демо"
+            for key, value in (
+                ("amount", "68 000 ₽"),
+                ("company_inn", "0000000000"),
+                ("payment_date", "2 октября"),
+            ):
+                status, edited = http(
+                    path + f"/card/facts/{key}",
+                    {"value": value, "expected_version": case["version"]},
+                    "PATCH",
+                )
+                assert status == 200
+                _, case = http(path)
+            assert edited["missing_required_fields"] == []
             status, confirmed = http(
                 path + "/card/confirm",
                 {"expected_version": case["version"], "card_version": edited["version"]},
