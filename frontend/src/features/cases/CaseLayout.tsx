@@ -93,6 +93,7 @@ const TABS = [
   { to: "card", label: "Карточка" },
   { to: "paths", label: "Пути решения" },
   { to: "claim", label: "Претензия" },
+  { to: "specialist", label: "Юрист" },
 ];
 
 export type CaseContext = { caseId: string; caseData: CaseDetail };

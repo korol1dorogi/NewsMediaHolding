@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
+import { AfterReview } from "./AfterReview";
 import {
   type Claim,
   has,
@@ -117,13 +118,19 @@ export function ClaimScreen() {
   const { caseId, caseData } = useCaseContext();
   const create = useCreateClaim(caseId);
   const submit = useSubmitClaim(caseId);
-  const inClaimFlow = caseData.path === "claim";
+  // After «no response» the user may move on to a specialist; the claim stays visible.
+  const inClaimFlow =
+    caseData.path === "claim" ||
+    (caseData.path === "specialist" && caseData.state !== "card_confirmed");
   const ready = inClaimFlow && caseData.ai_state !== "thinking" && !has(caseData, "create_claim");
   const claim = useClaim(caseId, caseData.version, ready);
   const [consent, setConsent] = useState(false);
 
   if (!inClaimFlow) {
     return <p>Претензия появится, когда вы выберете путь «Официальный запрос».</p>;
+  }
+  if (caseData.path === "specialist" && !claim.data) {
+    return <p>По этому обращению претензия не составлялась.</p>;
   }
   const current = claim.data?.versions.find((item) => item.version === claim.data?.current_version);
   const canSubmit = has(caseData, "submit_claim") && consent;
@@ -155,9 +162,11 @@ export function ClaimScreen() {
       {current && claim.data && (
         <div className="grid gap-6 md:grid-cols-2">
           <section className="space-y-2">
-            <p className="rounded border border-amber-300 bg-amber-50 p-2 text-sm">
-              Черновик. Перед отправкой его проверит юрист.
-            </p>
+            {["claim_draft", "claim_in_review"].includes(caseData.state) && (
+              <p className="rounded border border-amber-300 bg-amber-50 p-2 text-sm">
+                Черновик. Перед отправкой его проверит юрист.
+              </p>
+            )}
             <pre
               className="whitespace-pre-wrap rounded border p-3 font-sans text-sm"
               data-testid="claim-text"
@@ -194,14 +203,18 @@ export function ClaimScreen() {
                   >
                     Отправить на проверку юристу
                   </Button>
-                  <p className="text-xs text-muted">Оплата в прототипе — демонстрация.</p>
+                  <p className="text-xs text-muted">
+                    Оплата проверки по цене из «Пути решения» — демонстрация: деньги условно
+                    замораживаются до проверки юристом и не списываются.
+                  </p>
                 </div>
               )}
             </section>
           )}
         </div>
       )}
-      <ErrorText error={claim.error} />
+      {claim.data && caseData.state !== "claim_draft" && <AfterReview claim={claim.data} />}
+      {caseData.path === "claim" && <ErrorText error={claim.error} />}
     </div>
   );
 }
