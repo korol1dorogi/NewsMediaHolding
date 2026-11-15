@@ -2070,12 +2070,16 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ConsentVersionInput'
+              $ref: '#/components/schemas/AcceptOfferInput'
             example:
               expected_version: 7
               consent:
                 accepted: true
                 text_version: demo-v1
+              personal_data:
+                full_name: Демо Пользователь
+                reply_address: Вымышленный город, учебный адрес
+                contract_reference: DEMO-CONTRACT-1
   /api/lawyer/cases:
     get:
       operationId: listLawyerCases
@@ -3275,6 +3279,13 @@ components:
             type: string
             minLength: 1
             example: payment_date
+        similar_cases:
+          description: >-
+            «Вы не один» (B11): другие подтверждённые обращения с тем же ИНН. null, пока карточка
+            не подтверждена или ИНН не проверен.
+          anyOf:
+            - $ref: '#/components/schemas/SimilarCases'
+            - type: 'null'
       example:
         version: 1
         confirmed_at: null
@@ -4219,6 +4230,25 @@ components:
           - Представительство
         accepted: false
         created_at: '2026-11-15T10:00:00Z'
+    AcceptOfferInput:
+      type: object
+      additionalProperties: false
+      description: >-
+        Принятие предложения. personal_data обязательно, если у обращения нет подтверждённых данных
+        претензии: их раскрывают выбранному юристу после согласия и заморозки оплаты.
+      required:
+        - expected_version
+        - consent
+      properties:
+        expected_version:
+          $ref: '#/components/schemas/Version'
+          description: Ожидаемая Case.version.
+        consent:
+          $ref: '#/components/schemas/ConsentInput'
+        personal_data:
+          anyOf:
+            - $ref: '#/components/schemas/ClaimPersonalData'
+            - type: 'null'
     WorkResult:
       type: object
       additionalProperties: false
