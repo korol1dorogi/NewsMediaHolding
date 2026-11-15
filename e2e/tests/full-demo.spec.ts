@@ -139,7 +139,7 @@ test("Q2: claim reviewed with edits, no answer, pool, offer, data revealed, work
   await lawyer2.getByRole("button", { name: "Приступить к работе" }).click();
   await lawyer2.getByLabel("Результат работы").fill("Иск подан, копия и расчёт во вложении.");
   await lawyer2.getByRole("button", { name: "Сдать работу" }).click();
-  await expect(lawyer2.getByText(/Работа сдана/)).toBeVisible();
+  await expect(lawyer2.getByRole("status")).toContainText("Работа сдана");
 
   // Anya accepts the work; the frozen money goes to the lawyer.
   await page.reload();
