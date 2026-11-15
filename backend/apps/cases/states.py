@@ -9,7 +9,7 @@ class Conflict(APIException):
 
 # Domain services check event-specific conditions and lock the case before transition.
 TRANSITIONS = {
-    "draft": {"clarifying", "card_ready", "closed"},
+    "draft": {"clarifying", "card_ready", "emergency", "closed"},
     "clarifying": {"draft", "closed"},
     "card_ready": {"card_ready", "card_confirmed", "closed"},
     "card_confirmed": {"self_guided", "claim_draft", "in_pool", "closed"},
@@ -29,6 +29,7 @@ TRANSITIONS = {
     "work_submitted": {"completed", "disputed"},
     "disputed": {"completed", "in_pool", "closed"},
     "completed": {"closed"},
+    "emergency": {"closed"},
     "closed": set(),
 }
 
@@ -44,7 +45,12 @@ def transition(case, target):
 
 def can_close(case):
     # Settlement checks for later payment flows belong to their respective commands.
-    return case.state in UPLOAD_STATES | {"card_confirmed", "self_guided", "claim_draft"}
+    return case.state in UPLOAD_STATES | {
+        "card_confirmed",
+        "self_guided",
+        "claim_draft",
+        "emergency",
+    }
 
 
 def available_actions(case):

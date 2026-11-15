@@ -29,11 +29,11 @@ def case(owner):
     return Case.objects.create(owner=owner, consent_text_version="demo-v1", ai_state="idle")
 
 
-def create(client):
+def create(client, message="Оплатил тестовый курс."):
     return client.post(
         "/api/cases",
         {
-            "message": "Оплатил тестовый курс.",
+            "message": message,
             "consent": {"accepted": True, "text_version": "demo-v1"},
         },
         format="json",
@@ -52,7 +52,7 @@ def upload(client, case):
 def test_dialog(client, django_capture_on_commit_callbacks):
     with patch.object(process_message, "delay", side_effect=process_message.run) as worker:
         with django_capture_on_commit_callbacks(execute=True):
-            created = create(client)
+            created = create(client, "Учебный проект Демо, 68000 рублей, деньги не возвращают")
             assert created.status_code == 201
             assert created.data["ai_state"] == "thinking"
             worker.assert_not_called()
@@ -64,16 +64,31 @@ def test_dialog(client, django_capture_on_commit_callbacks):
         with django_capture_on_commit_callbacks(execute=True):
             response = client.post(
                 path + "/messages",
-                {"text": "Вчера.", "expected_version": case["version"]},
+                {
+                    "text": "1 октября оплатила банковской картой",
+                    "expected_version": case["version"],
+                },
                 format="json",
             )
             assert response.status_code == 202
             assert response.data["case"]["ai_state"] == "thinking"
+        incomplete = client.get(path).data
+        assert incomplete["state"] == "clarifying"
+        with django_capture_on_commit_callbacks(execute=True):
+            response = client.post(
+                path + "/messages",
+                {
+                    "text": "ИНН 0000000000, обещали записанные уроки, написала претензию",
+                    "expected_version": incomplete["version"],
+                },
+                format="json",
+            )
+            assert response.status_code == 202
         assert client.get(path).data["state"] == "card_ready"
         messages = client.get(path + "/messages").data["items"]
-        assert [item["author"] for item in messages] == ["user", "ai", "user", "ai"]
+        assert [item["author"] for item in messages] == ["user", "ai", "user", "ai", "user", "ai"]
         process_message.run(*worker.call_args.args)
-        assert len(client.get(path + "/messages").data["items"]) == 4
+        assert len(client.get(path + "/messages").data["items"]) == 6
 
 
 @pytest.mark.parametrize("failure", ["provider", "broker"])

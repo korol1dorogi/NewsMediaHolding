@@ -52,7 +52,7 @@ def test_http_dialog_with_worker(live_server, client, django_user_model):
             status, created = http(
                 "/api/cases",
                 {
-                    "message": "Тестовый курс, Учебный проект Демо",
+                    "message": "Учебный проект Демо, 68000 рублей, деньги не возвращают",
                     "consent": {"accepted": True, "text_version": "demo-v1"},
                 },
             )
@@ -61,14 +61,29 @@ def test_http_dialog_with_worker(live_server, client, django_user_model):
             first = poll(path)
             assert first["state"] == "clarifying"
             status, _ = http(
-                path + "/messages", {"expected_version": first["version"], "text": "Вчера"}
+                path + "/messages",
+                {
+                    "expected_version": first["version"],
+                    "text": "1 октября оплатила банковской картой",
+                },
+            )
+            assert status == 202
+            incomplete = poll(path)
+            assert incomplete["state"] == "clarifying"
+            status, _ = http(
+                path + "/messages",
+                {
+                    "expected_version": incomplete["version"],
+                    "text": "ИНН 0000000000, обещали записанные уроки, написала претензию",
+                },
             )
             assert status == 202
             case = poll(path)
             assert case["state"] == "card_ready"
             _, card = http(path + "/card")
-            assert card["missing_required_fields"] == ["payment_date"]
-            assert card["facts"][0]["source_quote"] == "Учебный проект Демо"
+            assert card["missing_required_fields"] == []
+            company = next(item for item in card["facts"] if item["key"] == "company_name")
+            assert company["source_quote"] == "Учебный проект Демо"
             status, edited = http(
                 path + "/card/facts/payment_date",
                 {"value": "2 октября", "expected_version": case["version"]},
@@ -83,4 +98,11 @@ def test_http_dialog_with_worker(live_server, client, django_user_model):
             assert status == 200 and confirmed["state"] == "card_confirmed"
             assert http(path + "/card")[1]["facts"] == edited["facts"]
             _, messages = http(path + "/messages")
-            assert [item["author"] for item in messages["items"]] == ["user", "ai", "user", "ai"]
+            assert [item["author"] for item in messages["items"]] == [
+                "user",
+                "ai",
+                "user",
+                "ai",
+                "user",
+                "ai",
+            ]

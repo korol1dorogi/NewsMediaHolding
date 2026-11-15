@@ -870,7 +870,7 @@ export interface components {
          * @example draft
          * @enum {string}
          */
-        CaseState: "draft" | "clarifying" | "card_ready" | "card_confirmed" | "self_guided" | "claim_draft" | "in_pool" | "closed" | "claim_in_review" | "claim_approved" | "claim_edited" | "awaiting_response" | "resolved" | "no_response" | "has_offers" | "no_offers" | "offer_accepted" | "in_progress" | "work_submitted" | "completed" | "disputed";
+        CaseState: "draft" | "clarifying" | "emergency" | "card_ready" | "card_confirmed" | "self_guided" | "claim_draft" | "in_pool" | "closed" | "claim_in_review" | "claim_approved" | "claim_edited" | "awaiting_response" | "resolved" | "no_response" | "has_offers" | "no_offers" | "offer_accepted" | "in_progress" | "work_submitted" | "completed" | "disputed";
         /**
          * @example idle
          * @enum {string}

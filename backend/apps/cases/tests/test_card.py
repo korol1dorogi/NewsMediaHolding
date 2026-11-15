@@ -94,7 +94,12 @@ def test_sources_scoped_to_case_and_checked_verbatim(case):
     ]
     with patch(
         "apps.cases.intake.next_step",
-        return_value={"card_ready": True, "proposed_facts": proposals},
+        return_value={
+            "card_ready": True,
+            "urgent": False,
+            "missing_documents": [],
+            "proposed_facts": proposals,
+        },
     ):
         process_message.run(str(case.pk), case.version)
     valid = case.facts.get(key="valid")
