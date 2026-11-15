@@ -13,6 +13,9 @@ from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.privacy.models import Consent
+from apps.privacy.services import record
+
 from . import serializers as dto
 from .models import Case, Document, Message
 from .states import INTAKE_STATES, UPLOAD_STATES, Conflict, can_close, transition
@@ -87,6 +90,7 @@ class Cases(CaseView):
         case = Case.objects.create(
             owner=request.user, consent_text_version=data["consent"]["text_version"]
         )
+        record(request.user, Consent.Kind.PROCESSING_OFFER, data["consent"], case=case)
         Message.objects.create(case=case, author="user", text=data["message"])
         schedule(case)
         return Response(dto.Detail(case).data, status=201)
