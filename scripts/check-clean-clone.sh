@@ -29,6 +29,9 @@ cp .env.example .env
 WEB_PORT="$PORT" CSRF_TRUSTED_ORIGINS="http://localhost:$PORT" \
   docker compose -p "$PROJECT" up -d --build --wait
 
+echo "==> Demo accounts"
+docker compose -p "$PROJECT" exec -T backend python manage.py seed_demo
+
 echo "==> Waiting for /api/ready"
 for _ in $(seq 1 30); do
   if curl -fsS "http://localhost:$PORT/api/ready" >/dev/null; then break; fi
@@ -44,7 +47,7 @@ PW_VERSION="$(sed -n 's/.*"@playwright\/test": *"\([^"]*\)".*/\1/p' e2e/package.
 export MSYS_NO_PATHCONV=1
 HOST_PWD="$(pwd -W 2>/dev/null || pwd)"
 
-echo "==> E2E smoke (Playwright $PW_VERSION)"
+echo "==> E2E (Playwright $PW_VERSION)"
 docker run --rm --network "$NETWORK" -e BASE_URL=http://web -e CI=1 \
   -v "$HOST_PWD/e2e:/src:ro" "mcr.microsoft.com/playwright:v${PW_VERSION}-noble" \
   sh -c "cp -r /src /e2e && cd /e2e && npm ci --no-audit --no-fund && npx playwright test"
