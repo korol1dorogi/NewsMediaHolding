@@ -7,6 +7,7 @@ from django.utils import timezone
 from kombu.exceptions import OperationalError
 
 from . import intake
+from .cards import apply_proposals
 from .models import Case, Message
 from .states import transition
 
@@ -40,6 +41,13 @@ def process_message(case_id, version):
     with transaction.atomic():
         case = pending(case_id, version).select_for_update().first()
         if case is None:
+            return
+        try:
+            with transaction.atomic():
+                if apply_proposals(case, result["proposed_facts"]):
+                    case.card_version += 1
+        except (KeyError, TypeError, ValueError, AttributeError):
+            fail(case_id, version)
             return
         transition(case, "card_ready" if ready else "clarifying")
         Message.objects.create(case=case, author="ai", text=reply)

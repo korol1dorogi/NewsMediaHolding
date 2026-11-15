@@ -55,6 +55,8 @@ def available_actions(case):
         actions.append("upload_document")
     if case.state == "card_ready":
         actions.append("confirm_card")
+    if case.state == "card_confirmed":
+        actions.append("choose_path")
     if can_close(case):
         actions.append("close_case")
     return actions
