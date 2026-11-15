@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { has, useMessages, useSendMessage, useUploadDocument } from "./api";
 import { ErrorText, useCaseContext } from "./CaseLayout";
+import { appendText, VoiceInput } from "./VoiceInput";
 
 const REQUESTED_DOCUMENTS = [
   ["Чек или банковская выписка", "подтверждает сумму и дату оплаты"],
@@ -10,7 +11,7 @@ const REQUESTED_DOCUMENTS = [
   ["Переписка с компанией", "показывает, что вы уже требовали вернуть деньги"],
 ] as const;
 
-const ACCEPT = ".png,.jpg,.jpeg,.txt,image/png,image/jpeg,text/plain";
+const ACCEPT = ".png,.jpg,.jpeg,.txt,.pdf,image/png,image/jpeg,text/plain,application/pdf";
 
 export function DialogScreen() {
   const { caseId, caseData } = useCaseContext();
@@ -95,6 +96,7 @@ export function DialogScreen() {
                 required
               />
             </label>
+            <VoiceInput onText={(spoken) => setText((current) => appendText(current, spoken))} />
             <ErrorText error={send.error} />
             <Button type="submit" disabled={!text.trim() || send.isPending}>
               Отправить
@@ -113,7 +115,7 @@ export function DialogScreen() {
         </ul>
         {has(caseData, "upload_document") && (
           <label className="block text-sm">
-            <span>Загрузить фото или текст (PNG, JPEG, TXT)</span>
+            <span>Загрузить фото, текст или PDF (PNG, JPEG, TXT, PDF)</span>
             <input type="file" accept={ACCEPT} onChange={attach} className="mt-1 block w-full" />
           </label>
         )}

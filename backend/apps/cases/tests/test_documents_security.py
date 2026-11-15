@@ -62,7 +62,8 @@ def test_allowed_types(client, case, name, content, mime):
     [
         # Wrong type altogether.
         ("page.html", b"<script>alert(1)</script>", "text/html"),
-        ("doc.pdf", b"%PDF-1.7", "application/pdf"),
+        # PDF itself is allowed since A7 (see test_pdf.py); a fake one is not.
+        ("doc.pdf", b"<html>not a pdf</html>", "application/pdf"),
         # Extension spoofing: content does not match the extension.
         ("photo.png", b"<svg onload=alert(1)>", "image/png"),
         ("photo.jpg", PNG, "image/jpeg"),
