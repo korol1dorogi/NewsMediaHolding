@@ -3,6 +3,7 @@ import { Link, NavLink, Outlet, useNavigate, useOutletContext, useParams } from 
 import { Button } from "@/components/ui/button";
 import { type CaseDetail, useCase, useCases, useCreateCase } from "./api";
 import { STATE_LABELS } from "./labels";
+import { appendText, VoiceInput } from "./VoiceInput";
 
 export function ErrorText({ error }: { error: unknown }) {
   if (!error) return null;
@@ -80,6 +81,7 @@ export function NewCase() {
           отдельного согласия.
         </span>
       </label>
+      <VoiceInput onText={(spoken) => setText((current) => appendText(current, spoken))} />
       <ErrorText error={create.error} />
       <Button type="submit" disabled={!consent || !text.trim() || create.isPending}>
         Отправить
