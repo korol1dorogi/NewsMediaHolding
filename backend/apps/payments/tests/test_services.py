@@ -14,10 +14,11 @@ pytestmark = pytest.mark.django_db
 CLAIM_PRICE = 149_000
 
 
-def make_user(name: str):
+def make_user(name: str, role: str = "user"):
     user_model = get_user_model()
-    # Works with the default user and with the custom user from K2.
-    return user_model.objects.create_user(**{user_model.USERNAME_FIELD: name}, password=None)
+    return user_model.objects.create_user(
+        **{user_model.USERNAME_FIELD: name}, password=None, role=role
+    )
 
 
 @pytest.fixture
@@ -27,7 +28,7 @@ def owner():
 
 @pytest.fixture
 def lawyer():
-    return make_user("demo-lawyer")
+    return make_user("demo-lawyer", role="lawyer")
 
 
 @pytest.fixture
@@ -198,6 +199,14 @@ def test_release_key_cannot_be_reused_for_another_hold(owner, lawyer):
     services.release(first, HoldStatus.HELD, "same", recipient=lawyer)
     with pytest.raises(services.ConflictingKey):
         services.release(second, HoldStatus.HELD, "same", recipient=lawyer)
+
+
+@pytest.mark.parametrize("role", ["user", "moderator", "editor"])
+def test_only_lawyer_can_receive_share(claim_hold, role):
+    stranger = make_user(f"demo-{role}-2", role=role)
+    with pytest.raises(services.InvalidRecipient):
+        services.release(claim_hold, HoldStatus.HELD, "release-1", recipient=stranger)
+    assert not Allocation.objects.exists()
 
 
 def test_payer_cannot_be_recipient(claim_hold, owner):

@@ -9,14 +9,21 @@ SECRET_KEY = env_str("DJANGO_SECRET_KEY", "local-dev-placeholder-change-me")
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", ["localhost", "127.0.0.1", "web", "backend"])
 
 INSTALLED_APPS = [
+    "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
+    "django.contrib.staticfiles",
     "rest_framework",
     "apps.core",
+    "apps.accounts",
+    "apps.cases",
     "apps.payments",
 ]
+
+AUTH_USER_MODEL = "accounts.User"
+CSRF_FAILURE_VIEW = "apps.accounts.errors.csrf_failure"
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -87,15 +94,30 @@ X_FRAME_OPTIONS = "DENY"
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
-        "rest_framework.authentication.SessionAuthentication",
+        "apps.accounts.authentication.SessionAuthentication401",
     ],
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
     ],
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
+    "EXCEPTION_HANDLER": "apps.accounts.errors.exception_handler",
 }
 
 REDIS_URL = env_str("REDIS_URL", "redis://redis:6379/0")
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": REDIS_URL,
+        "KEY_PREFIX": "nmh-auth",
+    }
+}
+AUTH_LOGIN_ATTEMPTS = max(1, env_int("AUTH_LOGIN_ATTEMPTS", 10))
+AUTH_LOGIN_WINDOW_SECONDS = max(1, env_int("AUTH_LOGIN_WINDOW_SECONDS", 60))
+AUTH_TRUST_PROXY_HEADER = env_bool("AUTH_TRUST_PROXY_HEADER", False)
+DEMO_USER_PASSWORD = env_str("DEMO_USER_PASSWORD", "demo-user-placeholder")
+DEMO_LAWYER_PASSWORD = env_str("DEMO_LAWYER_PASSWORD", "demo-lawyer-placeholder")
+DEMO_MODERATOR_PASSWORD = env_str("DEMO_MODERATOR_PASSWORD", "demo-moderator-placeholder")
+DEMO_EDITOR_PASSWORD = env_str("DEMO_EDITOR_PASSWORD", "demo-editor-placeholder")
 CELERY_BROKER_URL = REDIS_URL
 CELERY_RESULT_BACKEND = REDIS_URL
 CELERY_TASK_ALWAYS_EAGER = env_bool("CELERY_TASK_ALWAYS_EAGER", False)

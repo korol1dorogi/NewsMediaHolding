@@ -19,6 +19,7 @@ from .models import Allocation, AllocationKind, Hold, HoldStatus, Purpose, Refun
 from .providers import get_provider
 
 BASIS_POINTS = 10_000
+LAWYER_ROLE = "lawyer"  # accounts.User.Role.LAWYER
 _KEY_MAX_LENGTH = 128
 
 
@@ -147,7 +148,12 @@ def release(hold: Hold, expected_status: str, idempotency_key: str, recipient) -
             raise InvalidTransition("Hold is not in the expected held status")
         if Hold.objects.filter(release_key=key).exists():
             raise ConflictingKey("Idempotency key was used for another release")
-        if recipient is None or recipient.pk is None or recipient.pk == locked.owner_id:
+        if (
+            recipient is None
+            or recipient.pk is None
+            or recipient.pk == locked.owner_id
+            or getattr(recipient, "role", None) != LAWYER_ROLE
+        ):
             raise InvalidRecipient("Recipient must be a lawyer, not the payer")
 
         shares = split_amount(locked.purpose, locked.amount_kopecks)
