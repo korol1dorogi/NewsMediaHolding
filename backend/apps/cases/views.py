@@ -5,6 +5,7 @@ from pathlib import PurePath
 
 from django.conf import settings
 from django.db import transaction
+from django.db.models import Q
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 from rest_framework.authentication import SessionAuthentication
@@ -98,6 +99,9 @@ class Cases(CaseView):
 
 class CaseDetail(CaseView):
     def get(self, request, case_id):
+        from apps.pool.services import sweep
+
+        sweep()  # time-based transitions: offer window, work auto-acceptance
         return Response(dto.Detail(owned(request.user, case_id)).data)
 
 
@@ -215,7 +219,15 @@ class Download(CaseView):
         return super().perform_content_negotiation(request, force=True)
 
     def get(self, request, case_id, document_id):
-        doc = get_object_or_404(Document, case__owner=request.user, case_id=case_id, pk=document_id)
+        # Owner, or the lawyer whose offer the owner accepted (B10). Reviewers get no originals.
+        allowed = Q(case__owner=request.user) | Q(
+            case__work_assignments__lawyer=request.user,
+            case__work_assignments__status="active",
+            case__state__in=("offer_accepted", "in_progress", "work_submitted"),
+        )
+        doc = get_object_or_404(
+            Document.objects.filter(allowed).distinct(), case_id=case_id, pk=document_id
+        )
         response = FileResponse(
             BytesIO(bytes(doc.content)),
             as_attachment=True,

@@ -82,8 +82,18 @@ class Summary(serializers.ModelSerializer):
 
 
 class Detail(Summary):
-    pool = serializers.ReadOnlyField(default=None)
-    work = serializers.ReadOnlyField(default=None)
+    pool = serializers.SerializerMethodField()
+    work = serializers.SerializerMethodField()
+
+    def get_pool(self, case):
+        from apps.pool.services import owner_pool_status
+
+        return owner_pool_status(getattr(case, "pool_card", None))
+
+    def get_work(self, case):
+        from apps.pool.services import current_work, work_dto
+
+        return work_dto(current_work(case)) if case.path == "specialist" else None
 
     class Meta(Summary.Meta):
         fields = (*Summary.Meta.fields, "card_confirmed_at", "pool", "work")

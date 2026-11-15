@@ -1154,6 +1154,8 @@ export interface components {
             confirmed_at: string | null;
             facts: components["schemas"]["Fact"][];
             missing_required_fields: string[];
+            /** @description «Вы не один» (B11): другие подтверждённые обращения с тем же ИНН. null, пока карточка не подтверждена или ИНН не проверен. */
+            similar_cases?: components["schemas"]["SimilarCases"] | null;
         };
         EditFactInput: {
             /** @example Учебный проект Демо */
@@ -1624,6 +1626,13 @@ export interface components {
              * @example 2026-11-15T10:00:00Z
              */
             created_at: string;
+        };
+        /** @description Принятие предложения. personal_data обязательно, если у обращения нет подтверждённых данных претензии: их раскрывают выбранному юристу после согласия и заморозки оплаты. */
+        AcceptOfferInput: {
+            /** @description Ожидаемая Case.version. */
+            expected_version: components["schemas"]["Version"];
+            consent: components["schemas"]["ConsentInput"];
+            personal_data?: components["schemas"]["ClaimPersonalData"] | null;
         };
         WorkResult: {
             version: components["schemas"]["Version"];
@@ -3866,10 +3875,15 @@ export interface operations {
                  *       "consent": {
                  *         "accepted": true,
                  *         "text_version": "demo-v1"
+                 *       },
+                 *       "personal_data": {
+                 *         "full_name": "Демо Пользователь",
+                 *         "reply_address": "Вымышленный город, учебный адрес",
+                 *         "contract_reference": "DEMO-CONTRACT-1"
                  *       }
                  *     }
                  */
-                "application/json": components["schemas"]["ConsentVersionInput"];
+                "application/json": components["schemas"]["AcceptOfferInput"];
             };
         };
         responses: {

@@ -62,10 +62,13 @@ _CONTRACT = re.compile(
     re.I,
 )
 _PASSPORT = re.compile(
-    r"\bпаспорт(?:а|у|ом|е)?\s*(?:(?:серия|№|номер)\s*)?\d{2}\s?\d{2}"
+    r"\bпаспорт(?:а|у|ом|е)?(?:\s+[^\W\d]+){0,3}\s*(?:(?:серия|№|номер)\s*)?\d{2}\s?\d{2}"
     r"\s*(?:№|номер)?\s*\d{6}(?!\d)",
     re.I,
 )
+# Series and number without the word «паспорт» (found in S6): "4510 123456". The space
+# before the six digits is required so that a ten-digit INN is not taken for a passport.
+_PASSPORT_BARE = re.compile(r"(?<!\d)\d{2}\s?\d{2}\s\d{6}(?!\d)")
 _ADDRESS = re.compile(
     r"(?<!\w)(?:ул\.|улица|улице|улицы|проспект|пр-т|пр\.|проспекте|"
     r"переулок|пер\.|набережная|шоссе|бульвар|бул\.)\s*"
@@ -152,6 +155,7 @@ def scan(text: str, personal_data: KnownPersonalData) -> list[Finding]:
         ("date", _WORD_DATE),
         ("contract", _CONTRACT),
         ("passport", _PASSPORT),
+        ("passport", _PASSPORT_BARE),
         ("address", _ADDRESS),
         ("address", _APARTMENT),
     ]

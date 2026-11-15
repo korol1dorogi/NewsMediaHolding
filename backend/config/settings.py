@@ -24,6 +24,7 @@ INSTALLED_APPS = [
     "apps.claims",
     "apps.privacy",
     "apps.audit",
+    "apps.pool",
 ]
 
 AUTH_USER_MODEL = "accounts.User"
