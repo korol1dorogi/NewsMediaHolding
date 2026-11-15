@@ -3,11 +3,27 @@
     "name": "NewsMediaHolding API",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
-  "variable": [{ "key": "baseUrl", "value": "http://localhost:8080" }],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "userPassword",
+      "value": "demo-user-placeholder"
+    },
+    {
+      "key": "lawyerPassword",
+      "value": "demo-lawyer-placeholder"
+    }
+  ],
   "item": [
     {
       "name": "health",
-      "request": { "method": "GET", "url": "{{baseUrl}}/api/health" },
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/health"
+      },
       "event": [
         {
           "listen": "test",
@@ -22,7 +38,10 @@
     },
     {
       "name": "ready",
-      "request": { "method": "GET", "url": "{{baseUrl}}/api/ready" },
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/ready"
+      },
       "event": [
         {
           "listen": "test",
@@ -42,11 +61,733 @@
     },
     {
       "name": "unknown route is 404",
-      "request": { "method": "GET", "url": "{{baseUrl}}/api/does-not-exist" },
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/does-not-exist"
+      },
       "event": [
         {
           "listen": "test",
-          "script": { "exec": ["pm.test('status 404', () => pm.response.to.have.status(404));"] }
+          "script": {
+            "exec": [
+              "pm.test('status 404', () => pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "csrf",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/auth/csrf",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status 200', () => pm.response.to.have.status(200));",
+              "pm.environment.set('csrf', pm.cookies.get('csrftoken'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "login as Anya",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/auth/login",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-CSRFToken",
+            "value": "{{csrf}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"username\": \"demo_anya\", \"password\": \"{{userPassword}}\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status 200', () => pm.response.to.have.status(200));",
+              "pm.test('role user', () => pm.expect(pm.response.json().role).to.eql('user'));",
+              "pm.environment.set('csrf', pm.cookies.get('csrftoken'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "create case",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/cases",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-CSRFToken",
+            "value": "{{csrf}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"message\": \"Оплатила курс в Учебный проект Демо, 68000 рублей, деньги не возвращают.\", \"consent\": {\"accepted\": true, \"text_version\": \"demo-v1\"}}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status 201', () => pm.response.to.have.status(201));",
+              "pm.environment.set('caseId', pm.response.json().id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "wait for question",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/cases/{{caseId}}",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const body = pm.response.json();",
+              "const tries = Number(pm.environment.get('tries') || 0);",
+              "if (body.ai_state === 'thinking' && tries < 40) {",
+              "  pm.environment.set('tries', tries + 1);",
+              "  setTimeout(() => {}, 500);",
+              "  pm.execution.setNextRequest('wait for question');",
+              "  return;",
+              "}",
+              "pm.environment.set('tries', 0);",
+              "pm.test('status 200', () => pm.response.to.have.status(200));",
+              "pm.test('state clarifying', () => pm.expect(body.state).to.eql('clarifying'));",
+              "pm.test('ai idle', () => pm.expect(body.ai_state).to.eql('idle'));",
+              "pm.environment.set('version', body.version);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "answer payment",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/cases/{{caseId}}/messages",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-CSRFToken",
+            "value": "{{csrf}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"text\": \"Оплатила 1 октября банковской картой.\", \"expected_version\": \"{{version}}\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status 202', () => pm.response.to.have.status(202));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "wait for next question",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/cases/{{caseId}}",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const body = pm.response.json();",
+              "const tries = Number(pm.environment.get('tries') || 0);",
+              "if (body.ai_state === 'thinking' && tries < 40) {",
+              "  pm.environment.set('tries', tries + 1);",
+              "  setTimeout(() => {}, 500);",
+              "  pm.execution.setNextRequest('wait for next question');",
+              "  return;",
+              "}",
+              "pm.environment.set('tries', 0);",
+              "pm.test('status 200', () => pm.response.to.have.status(200));",
+              "pm.test('state clarifying', () => pm.expect(body.state).to.eql('clarifying'));",
+              "pm.test('ai idle', () => pm.expect(body.ai_state).to.eql('idle'));",
+              "pm.environment.set('version', body.version);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "answer company",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/cases/{{caseId}}/messages",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-CSRFToken",
+            "value": "{{csrf}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"text\": \"ИНН 0000000000, обещали записанные уроки, я уже написала претензию.\", \"expected_version\": \"{{version}}\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status 202', () => pm.response.to.have.status(202));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "wait for card",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/cases/{{caseId}}",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const body = pm.response.json();",
+              "const tries = Number(pm.environment.get('tries') || 0);",
+              "if (body.ai_state === 'thinking' && tries < 40) {",
+              "  pm.environment.set('tries', tries + 1);",
+              "  setTimeout(() => {}, 500);",
+              "  pm.execution.setNextRequest('wait for card');",
+              "  return;",
+              "}",
+              "pm.environment.set('tries', 0);",
+              "pm.test('status 200', () => pm.response.to.have.status(200));",
+              "pm.test('state card_ready', () => pm.expect(body.state).to.eql('card_ready'));",
+              "pm.test('ai idle', () => pm.expect(body.ai_state).to.eql('idle'));",
+              "pm.environment.set('version', body.version);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "card has quotes",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/cases/{{caseId}}/card",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status 200', () => pm.response.to.have.status(200));",
+              "const card = pm.response.json();",
+              "pm.environment.set('cardVersion', card.version);",
+              "pm.test('nothing missing', () => pm.expect(card.missing_required_fields).to.eql([]));",
+              "pm.test('every found fact quotes its source', () => card.facts.filter(f => f.status === 'found').forEach(f => pm.expect(f.source_quote).to.be.a('string').and.not.empty));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "confirm card",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/cases/{{caseId}}/card/confirm",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-CSRFToken",
+            "value": "{{csrf}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"expected_version\": \"{{version}}\", \"card_version\": \"{{cardVersion}}\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status 200', () => pm.response.to.have.status(200));",
+              "pm.test('confirmed', () => pm.expect(pm.response.json().state).to.eql('card_confirmed'));",
+              "pm.environment.set('version', pm.response.json().version);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "company is active",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/cases/{{caseId}}/company",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status 200', () => pm.response.to.have.status(200));",
+              "pm.test('active demo company', () => { const c = pm.response.json(); pm.expect(c.status).to.eql('active'); pm.expect(c.is_demo).to.eql(true); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "three paths",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/cases/{{caseId}}/paths",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status 200', () => pm.response.to.have.status(200));",
+              "const items = pm.response.json().items;",
+              "pm.test('three paths', () => pm.expect(items.map(i => i.path)).to.eql(['self_guided', 'claim', 'specialist']));",
+              "pm.test('claim available', () => pm.expect(items[1].available).to.eql(true));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "choose claim",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/cases/{{caseId}}/path",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-CSRFToken",
+            "value": "{{csrf}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"path\": \"claim\", \"expected_version\": \"{{version}}\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status 200', () => pm.response.to.have.status(200));",
+              "pm.test('claim draft', () => pm.expect(pm.response.json().state).to.eql('claim_draft'));",
+              "pm.environment.set('version', pm.response.json().version);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "draft claim",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/cases/{{caseId}}/claim",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-CSRFToken",
+            "value": "{{csrf}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"expected_version\": \"{{version}}\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status 202', () => pm.response.to.have.status(202));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "wait for draft",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/cases/{{caseId}}",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const body = pm.response.json();",
+              "const tries = Number(pm.environment.get('tries') || 0);",
+              "if (body.ai_state === 'thinking' && tries < 40) {",
+              "  pm.environment.set('tries', tries + 1);",
+              "  setTimeout(() => {}, 500);",
+              "  pm.execution.setNextRequest('wait for draft');",
+              "  return;",
+              "}",
+              "pm.environment.set('tries', 0);",
+              "pm.test('status 200', () => pm.response.to.have.status(200));",
+              "pm.test('state claim_draft', () => pm.expect(body.state).to.eql('claim_draft'));",
+              "pm.test('ai idle', () => pm.expect(body.ai_state).to.eql('idle'));",
+              "pm.environment.set('version', body.version);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "claim draft",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/cases/{{caseId}}/claim",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status 200', () => pm.response.to.have.status(200));",
+              "const claim = pm.response.json();",
+              "pm.test('first AI version', () => { pm.expect(claim.current_version).to.eql(1); pm.expect(claim.versions[0].author).to.eql('ai'); });",
+              "pm.test('company from the card', () => pm.expect(claim.versions[0].text).to.include('Учебный проект Демо'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "confirm personal data",
+      "request": {
+        "method": "PUT",
+        "url": "{{baseUrl}}/api/cases/{{caseId}}/claim/personal-data",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-CSRFToken",
+            "value": "{{csrf}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"expected_version\": \"{{version}}\", \"confirmed\": true, \"data\": {\"full_name\": \"Демо Пользователь\", \"reply_address\": \"Вымышленный город, учебный адрес\", \"contract_reference\": \"DEMO-CONTRACT-1\"}}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status 200', () => pm.response.to.have.status(200));",
+              "pm.test('confirmed', () => pm.expect(pm.response.json().personal_data_confirmed).to.eql(true));",
+              "pm.environment.set('version', pm.response.json().case_version);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "submit for review",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/cases/{{caseId}}/claim/submit",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-CSRFToken",
+            "value": "{{csrf}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"expected_version\": \"{{version}}\", \"claim_version\": 1, \"consent\": {\"accepted\": true, \"text_version\": \"demo-v1\"}}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status 200', () => pm.response.to.have.status(200));",
+              "pm.test('in review', () => pm.expect(pm.response.json().state).to.eql('claim_in_review'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "logout Anya",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/auth/logout",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-CSRFToken",
+            "value": "{{csrf}}"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status 200', () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "csrf again",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/auth/csrf",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status 200', () => pm.response.to.have.status(200));",
+              "pm.environment.set('csrf', pm.cookies.get('csrftoken'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "login as lawyer",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/auth/login",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-CSRFToken",
+            "value": "{{csrf}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"username\": \"demo_lawyer_1\", \"password\": \"{{lawyerPassword}}\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status 200', () => pm.response.to.have.status(200));",
+              "pm.environment.set('csrf', pm.cookies.get('csrftoken'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "stranger gets 404 on case",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/cases/{{caseId}}",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status 404', () => pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "stranger gets 404 on case/messages",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/cases/{{caseId}}/messages",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status 404', () => pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "stranger gets 404 on case/card",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/cases/{{caseId}}/card",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status 404', () => pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "stranger gets 404 on case/company",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/cases/{{caseId}}/company",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status 404', () => pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "stranger gets 404 on case/paths",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/cases/{{caseId}}/paths",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status 404', () => pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "stranger gets 404 on case/plan",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/cases/{{caseId}}/plan",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status 404', () => pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "stranger gets 404 on case/claim",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/cases/{{caseId}}/claim",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status 404', () => pm.response.to.have.status(404));"
+            ]
+          }
         }
       ]
     }

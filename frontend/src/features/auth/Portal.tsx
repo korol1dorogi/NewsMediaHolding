@@ -28,11 +28,8 @@ export function Portal({ allowedRole }: { allowedRole: "user" | "lawyer" }) {
       <nav aria-label="Разделы кабинета" className="mt-5 flex flex-wrap gap-4">
         {(allowedRole === "user"
           ? [
-              ["dialog", "Обращение"],
-              ["card", "Карточка"],
-              ["paths", "Пути решения"],
-              ["claim", "Претензия"],
-              ["offers", "Предложения"],
+              ["", "Мои обращения"],
+              ["new", "Новое обращение"],
             ]
           : [
               ["queue", "Очередь"],

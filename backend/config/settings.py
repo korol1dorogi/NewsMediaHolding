@@ -20,6 +20,10 @@ INSTALLED_APPS = [
     "apps.accounts",
     "apps.cases",
     "apps.payments",
+    "apps.companies",
+    "apps.claims",
+    "apps.privacy",
+    "apps.audit",
 ]
 
 AUTH_USER_MODEL = "accounts.User"
@@ -131,6 +135,25 @@ LLM_PROVIDER = env_str("LLM_PROVIDER", "mock")
 LLM_BASE_URL = env_str("LLM_BASE_URL", "")
 LLM_API_KEY = env_str("LLM_API_KEY", "")
 LLM_MODEL = env_str("LLM_MODEL", "")
+# Mock fixture name: backend/apps/llm/mock_responses/<task>/<scenario>.json
+LLM_MOCK_SCENARIO = env_str("LLM_MOCK_SCENARIO", "demo")
+
+# Company check by INN: "mock" (demo cache, no network) or "dadata".
+COMPANIES_PROVIDER = env_str("COMPANIES_PROVIDER", "mock")
+COMPANIES_API_KEY = env_str("COMPANIES_API_KEY", "")
+COMPANIES_API_URL = env_str(
+    "COMPANIES_API_URL",
+    "https://suggestions.dadata.ru/suggestions/api/4_1/rs/findById/party",
+)
+
+# Timeouts from docs/product.md (placeholders, open to discussion).
+CLAIM_REVIEW_TIMEOUT_HOURS = max(1, env_int("CLAIM_REVIEW_TIMEOUT_HOURS", 4))
+OFFERS_WINDOW_HOURS = max(1, env_int("OFFERS_WINDOW_HOURS", 48))
+WORK_ACCEPTANCE_DAYS = max(1, env_int("WORK_ACCEPTANCE_DAYS", 3))
+
+# Documents: private DB blobs, served only through the owner-checked endpoint.
+DOCUMENTS_MAX_BYTES = max(1, env_int("DOCUMENTS_MAX_BYTES", 5 * 1024 * 1024))
+DOCUMENTS_MAX_PER_CASE = max(1, env_int("DOCUMENTS_MAX_PER_CASE", 10))
 
 # Payments: demo escrow, no real money. Amounts in kopecks, shares in basis points (1% = 100).
 # Placeholders from docs/product.md, open to the financial model.
