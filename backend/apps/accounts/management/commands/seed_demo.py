@@ -11,6 +11,11 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument("--reset-passwords", action="store_true")
+        parser.add_argument(
+            "--with-data",
+            action="store_true",
+            help="Also create 33 fictional cases about the demo company, a queue and a pool.",
+        )
 
     @transaction.atomic
     def handle(self, *args, **options):
@@ -37,3 +42,8 @@ class Command(BaseCommand):
         self.stdout.write(
             self.style.SUCCESS("Demo accounts are ready. Passwords were not printed.")
         )
+        if options["with_data"]:
+            from apps.pool.demo import seed
+
+            created = seed()
+            self.stdout.write("Demo data created." if created else "Demo data already present.")

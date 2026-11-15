@@ -39,6 +39,8 @@ cp .env.example .env && docker compose up -d --build --wait   # затем http:
 
 ```bash
 docker compose exec backend python manage.py seed_demo
+# для демо: ещё 33 вымышленных обращения, очередь и пул
+docker compose exec backend python manage.py seed_demo --with-data
 ```
 
 | Логин | Роль | Переменная пароля | Локальная заглушка |
