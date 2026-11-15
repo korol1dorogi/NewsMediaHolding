@@ -26,9 +26,11 @@ def test_http_dialog_with_worker(live_server, client, django_user_model):
         "X-CSRFToken": csrf,
     }
 
-    def http(path, body=None):
+    def http(path, body=None, method=None):
         data = None if body is None else json.dumps(body).encode()
-        with urlopen(Request(live_server.url + path, data, headers), timeout=5) as reply:
+        with urlopen(
+            Request(live_server.url + path, data, headers, method=method), timeout=5
+        ) as reply:
             return reply.status, json.load(reply)
 
     def poll(path):
@@ -50,7 +52,7 @@ def test_http_dialog_with_worker(live_server, client, django_user_model):
             status, created = http(
                 "/api/cases",
                 {
-                    "message": "Тестовый курс",
+                    "message": "Тестовый курс, Учебный проект Демо",
                     "consent": {"accepted": True, "text_version": "demo-v1"},
                 },
             )
@@ -62,6 +64,23 @@ def test_http_dialog_with_worker(live_server, client, django_user_model):
                 path + "/messages", {"expected_version": first["version"], "text": "Вчера"}
             )
             assert status == 202
-            assert poll(path)["state"] == "card_ready"
+            case = poll(path)
+            assert case["state"] == "card_ready"
+            _, card = http(path + "/card")
+            assert card["missing_required_fields"] == ["payment_date"]
+            assert card["facts"][0]["source_quote"] == "Учебный проект Демо"
+            status, edited = http(
+                path + "/card/facts/payment_date",
+                {"value": "2 октября", "expected_version": case["version"]},
+                "PATCH",
+            )
+            assert status == 200 and edited["missing_required_fields"] == []
+            _, case = http(path)
+            status, confirmed = http(
+                path + "/card/confirm",
+                {"expected_version": case["version"], "card_version": edited["version"]},
+            )
+            assert status == 200 and confirmed["state"] == "card_confirmed"
+            assert http(path + "/card")[1]["facts"] == edited["facts"]
             _, messages = http(path + "/messages")
             assert [item["author"] for item in messages["items"]] == ["user", "ai", "user", "ai"]
