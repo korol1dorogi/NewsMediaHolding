@@ -19,6 +19,7 @@ INSTALLED_APPS = [
     "apps.core",
     "apps.accounts",
     "apps.cases",
+    "apps.payments",
 ]
 
 AUTH_USER_MODEL = "accounts.User"
@@ -125,6 +126,13 @@ LLM_PROVIDER = env_str("LLM_PROVIDER", "mock")
 LLM_BASE_URL = env_str("LLM_BASE_URL", "")
 LLM_API_KEY = env_str("LLM_API_KEY", "")
 LLM_MODEL = env_str("LLM_MODEL", "")
+
+# Payments: demo escrow, no real money. Amounts in kopecks, shares in basis points (1% = 100).
+# Placeholders from docs/product.md, open to the financial model.
+PAYMENTS_PROVIDER = env_str("PAYMENTS_PROVIDER", "demo")
+PAYMENTS_CLAIM_PRICE_KOPECKS = env_int("PAYMENTS_CLAIM_PRICE_KOPECKS", 149_000)
+PAYMENTS_REVIEWER_SHARE_BP = env_int("PAYMENTS_REVIEWER_SHARE_BP", 7_000)
+PAYMENTS_PLATFORM_FEE_BP = env_int("PAYMENTS_PLATFORM_FEE_BP", 1_000)
 
 LOGGING = {
     "version": 1,
