@@ -43,6 +43,19 @@ class SubmitInput(ClaimVersionInput):
     consent = Consent()
 
 
+class RejectEditsInput(ClaimVersionInput):
+    comment = serializers.CharField(max_length=2_000)
+
+
+class MarkSentInput(ClaimVersionInput):
+    sent_on = serializers.DateField()
+
+
+class OutcomeInput(Versioned):
+    outcome = serializers.ChoiceField(choices=["resolved", "refused", "no_response"])
+    comment = serializers.CharField(max_length=2_000)
+
+
 def _time(value):
     return (
         serializers.DateTimeField(default_timezone=UTC).to_representation(value) if value else None

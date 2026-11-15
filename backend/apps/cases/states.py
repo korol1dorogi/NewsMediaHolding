@@ -49,7 +49,15 @@ def transition(case, target):
 
 def can_close(case):
     # Settlement checks for later payment flows belong to their respective commands.
-    return case.state in UPLOAD_STATES | {"card_confirmed", "self_guided", "claim_draft"}
+    return case.state in UPLOAD_STATES | {
+        "card_confirmed",
+        "self_guided",
+        "claim_draft",
+        "claim_approved",
+        "awaiting_response",
+        "resolved",
+        "no_response",
+    }
 
 
 def _claim_draft_actions(case):
@@ -76,6 +84,12 @@ def available_actions(case):
         actions.append("choose_path")
     if case.state == "claim_draft":
         actions.extend(_claim_draft_actions(case))
+    if case.state == "claim_edited":
+        actions.extend(["accept_edits", "reject_edits"])
+    if case.state == "claim_approved":
+        actions.append("mark_sent")
+    if case.state == "awaiting_response":
+        actions.append("record_outcome")
     if can_close(case):
         actions.append("close_case")
     return actions
