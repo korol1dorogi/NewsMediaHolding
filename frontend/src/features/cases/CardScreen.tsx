@@ -153,9 +153,22 @@ export function CardScreen() {
           <h3 className="mb-2 font-semibold">Проверка компании</h3>
           <CompanyBlock />
         </div>
-        <div className="rounded border p-3 text-sm text-muted">
-          <h3 className="mb-1 font-semibold text-foreground">Вы не один</h3>
-          Похожие обращения по этой компании появятся здесь.
+        <div className="rounded border p-3 text-sm" data-testid="similar-cases">
+          <h3 className="mb-1 font-semibold">Вы не один</h3>
+          {card.data.similar_cases ? (
+            card.data.similar_cases.count > 0 ? (
+              <p>
+                По этой компании ещё{" "}
+                <span className="font-semibold">{card.data.similar_cases.count}</span> обращений из{" "}
+                {card.data.similar_cases.cities_count} городов за{" "}
+                {card.data.similar_cases.period_months} мес.
+              </p>
+            ) : (
+              <p className="text-muted">Похожих обращений пока нет.</p>
+            )
+          ) : (
+            <p className="text-muted">Посчитаем после подтверждения карточки.</p>
+          )}
         </div>
         <div className="rounded border p-3 text-sm text-muted">
           <h3 className="mb-1 font-semibold text-foreground">Шансы в суде</h3>

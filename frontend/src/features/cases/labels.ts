@@ -6,6 +6,11 @@ export const FACT_LABELS: Record<string, string> = {
   service_description: "Что оплачено",
   payment_date: "Дата оплаты",
   amount: "Сумма",
+  payment_method: "Способ оплаты",
+  promised: "Что обещали",
+  happened: "Что произошло",
+  actions_taken: "Что уже сделано",
+  city: "Город",
 };
 
 export function factLabel(key: string): string {

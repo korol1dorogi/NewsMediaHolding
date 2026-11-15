@@ -1,6 +1,8 @@
 import { Link, Outlet } from "react-router-dom";
+import { useSession } from "@/features/auth/session";
 
 export function Layout() {
+  const { user, loading } = useSession();
   return (
     <div className="min-h-screen">
       <header className="border-b border-border">
@@ -8,7 +10,8 @@ export function Layout() {
           <Link to="/" className="font-semibold">
             Сервис обращений
           </Link>
-          <Link to="/login">Войти</Link>
+          {!loading && !user && <Link to="/login">Войти</Link>}
+          {user && <span className="ml-auto text-sm text-muted">{user.username}</span>}
         </nav>
       </header>
       <main className="mx-auto max-w-5xl px-4 py-8">
