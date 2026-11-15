@@ -41,6 +41,19 @@ class Close(Versioned):
     reason = serializers.CharField()
 
 
+class EditFact(Versioned):
+    value = serializers.CharField()
+
+    def validate(self, attrs):
+        if not isinstance(self.initial_data.get("value"), str):
+            raise serializers.ValidationError({"value": "Ожидается строка."})
+        return attrs
+
+
+class ConfirmCard(Versioned):
+    card_version = serializers.IntegerField(min_value=1)
+
+
 class Upload(Versioned):
     file = serializers.FileField(max_length=255)
 
