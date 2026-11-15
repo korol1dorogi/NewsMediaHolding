@@ -83,6 +83,10 @@ API входа: сначала `GET /api/auth/csrf`, затем `POST /api/auth/
 | `WEB_PORT` | `8080` | Порт приложения на хосте |
 | `LLM_PROVIDER` | `mock` | `mock` или OpenAI-совместимый провайдер |
 | `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL` | пусто | Настройки реальной модели |
+| `LLM_MOCK_SCENARIO` | `demo` | Имя файла ответа мока: `backend/apps/llm/mock_responses/<задача>/<сценарий>.json` |
+| `COMPANIES_PROVIDER`, `COMPANIES_API_KEY` | `mock`, пусто | Проверка компании по ИНН: `mock` знает только демо-ИНН `0000000000`; `dadata` — реестр по ключу |
+| `DOCUMENTS_MAX_BYTES`, `DOCUMENTS_MAX_PER_CASE` | `5242880`, `10` | Лимиты загрузки документов |
+| `CLAIM_REVIEW_TIMEOUT_HOURS`, `OFFERS_WINDOW_HOURS`, `WORK_ACCEPTANCE_DAYS` | `4`, `48`, `3` | Сроки проверки претензии, сбора предложений и приёмки работы |
 | `PAYMENTS_PROVIDER` | `demo` | Провайдер оплаты. Есть только `demo`: **оплата — демонстрация**, реальные деньги не списываются |
 | `PAYMENTS_CLAIM_PRICE_KOPECKS` | `149000` | Цена претензии в копейках (ориентир 1 490 ₽) |
 | `PAYMENTS_REVIEWER_SHARE_BP` | `7000` | Доля юриста-проверяющего в базисных пунктах (70%) |

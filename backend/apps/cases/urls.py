@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import card_views, views
+from . import card_views, path_views, views
 
 urlpatterns = [
     path("cases", views.Cases.as_view()),
@@ -12,4 +12,8 @@ urlpatterns = [
     path("cases/<uuid:case_id>/card", card_views.Card.as_view()),
     path("cases/<uuid:case_id>/card/facts/<str:key>", card_views.EditFact.as_view()),
     path("cases/<uuid:case_id>/card/confirm", card_views.Confirm.as_view()),
+    path("cases/<uuid:case_id>/company", path_views.Company.as_view()),
+    path("cases/<uuid:case_id>/paths", path_views.Paths.as_view()),
+    path("cases/<uuid:case_id>/path", path_views.ChoosePath.as_view()),
+    path("cases/<uuid:case_id>/plan", path_views.Plan.as_view()),
 ]

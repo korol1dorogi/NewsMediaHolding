@@ -1,3 +1,5 @@
+import re
+import unicodedata
 from io import BytesIO
 from pathlib import PurePath
 
@@ -54,7 +56,18 @@ class CaseView(APIView):
         }
         if response.status_code in errors:
             code, message = errors[response.status_code]
-            response.data = {"code": code, "message": message, "details": {}}
+            details = {}
+            data = response.data
+            if isinstance(data, dict) and {"code", "message", "details"} <= data.keys():
+                # Already shaped by the global handler (apps.accounts.errors).
+                data = data["details"] if isinstance(data["details"], dict) else {}
+            if response.status_code == 400 and isinstance(data, dict):
+                for key, value in data.items():
+                    items = value if isinstance(value, list) else [value]
+                    details[str(key)] = [str(item) for item in items]
+            elif response.status_code == 409:
+                details = getattr(exc, "details", None) or {}
+            response.data = {"code": code, "message": message, "details": details}
         return response
 
 
@@ -124,11 +137,29 @@ class CloseCase(CaseView):
         return Response(dto.Detail(case).data)
 
 
+_UNSAFE_NAME = re.compile(r"[^\w .()-]+")
+
+
+def safe_filename(name, mime):
+    """Display name only: files live in the private DB blob under a random UUID."""
+    stem = PurePath(str(name).replace("\\", "/")).name
+    stem = "".join(ch for ch in stem if not unicodedata.category(ch).startswith("C"))
+    stem = _UNSAFE_NAME.sub("_", stem).strip(" .")[:100]
+    extension = {"image/png": ".png", "image/jpeg": ".jpg", "text/plain": ".txt"}[mime]
+    if not stem.lower().endswith((extension, ".jpeg")):
+        stem = (stem or "document") + extension
+    return stem
+
+
 def read_document(upload):
-    # Bound the private DB blob using Django's existing in-memory upload threshold.
-    if upload.size > settings.FILE_UPLOAD_MAX_MEMORY_SIZE:
-        raise ValidationError("Файл слишком большой.")
-    content = upload.read()
+    # Bound the private DB blob before reading it into memory.
+    if upload.size > settings.DOCUMENTS_MAX_BYTES:
+        raise ValidationError({"file": ["Файл слишком большой."]})
+    content = upload.read(settings.DOCUMENTS_MAX_BYTES + 1)
+    if len(content) > settings.DOCUMENTS_MAX_BYTES:
+        raise ValidationError({"file": ["Файл слишком большой."]})
+    if not content:
+        raise ValidationError({"file": ["Файл пустой."]})
     suffix = PurePath(upload.name).suffix.lower()
     if content.startswith(b"\x89PNG\r\n\x1a\n") and suffix == ".png":
         mime = "image/png"
@@ -138,12 +169,12 @@ def read_document(upload):
         try:
             content.decode("utf-8")
         except UnicodeDecodeError as exc:
-            raise ValidationError("Нужен текст UTF-8.") from exc
+            raise ValidationError({"file": ["Нужен текст UTF-8."]}) from exc
         mime = "text/plain"
     else:
-        raise ValidationError("Неподдерживаемый файл.")
+        raise ValidationError({"file": ["Неподдерживаемый файл."]})
     if mime != upload.content_type:
-        raise ValidationError("Тип файла не совпадает с содержимым.")
+        raise ValidationError({"file": ["Тип файла не совпадает с содержимым."]})
     return mime, content
 
 
@@ -157,10 +188,12 @@ class Documents(CaseView):
         check_version(case, data)
         if case.state not in UPLOAD_STATES or case.card_confirmed_at is not None:
             raise Conflict()
+        if case.documents.count() >= settings.DOCUMENTS_MAX_PER_CASE:
+            raise ValidationError({"file": ["Достигнут лимит файлов в обращении."]})
         mime, content = read_document(data["file"])
         doc = Document.objects.create(
             case=case,
-            filename=data["file"].name,
+            filename=safe_filename(data["file"].name, mime),
             content=content,
             content_type=mime,
             size_bytes=len(content),
@@ -187,4 +220,7 @@ class Download(CaseView):
         )
         response["Cache-Control"] = "private, no-store"
         response["X-Content-Type-Options"] = "nosniff"
+        # Never render a stored file as a page, even if a browser ignores the attachment.
+        response["Content-Security-Policy"] = "default-src 'none'; sandbox"
+        response["Cross-Origin-Resource-Policy"] = "same-origin"
         return response
