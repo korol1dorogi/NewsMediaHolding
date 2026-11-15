@@ -149,9 +149,11 @@ def next_step(case):
         "Если ещё не приложили чек, добавьте его: он поможет подтвердить оплату.",
         "Если ещё не приложили договор, добавьте его: он поможет подтвердить условия.",
     ]
-    if case.documents.filter(content_type__in=["image/png", "image/jpeg"]).exists():
+    if case.documents.filter(
+        content_type__in=["image/png", "image/jpeg", "application/pdf"]
+    ).exists():
         missing_documents.append(
-            "Перепишите данные с изображения текстом: изображение пока нельзя прочитать."
+            "Перепишите данные с фото или PDF текстом: такие файлы AI пока не читает."
         )
     return {
         "questions": [FIELDS[key] for key in missing[:5]],

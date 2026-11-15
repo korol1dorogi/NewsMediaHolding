@@ -1085,7 +1085,7 @@ export interface components {
              * @example image/jpeg
              * @enum {string}
              */
-            content_type: "image/jpeg" | "image/png" | "text/plain";
+            content_type: "image/jpeg" | "image/png" | "text/plain" | "application/pdf";
             /** @example 128 */
             size_bytes: number;
             /**
@@ -1420,7 +1420,7 @@ export interface components {
              * @example image/jpeg
              * @enum {string}
              */
-            content_type: "image/jpeg" | "image/png" | "text/plain";
+            content_type: "image/jpeg" | "image/png" | "text/plain" | "application/pdf";
             /** @example true */
             safe_redaction_available: boolean;
         };
@@ -2427,6 +2427,7 @@ export interface operations {
                     "text/plain": string;
                     "image/png": string;
                     "image/jpeg": string;
+                    "application/pdf": string;
                 };
             };
             400: components["responses"]["Error400"];

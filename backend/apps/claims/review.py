@@ -155,7 +155,12 @@ def review_dto(claim, case, assignment):
                 "safe_source_quote": mask(quote, known),
             }
         )
-    labels = {"image/png": "PNG", "image/jpeg": "JPEG", "text/plain": "текст"}
+    labels = {
+        "image/png": "PNG",
+        "image/jpeg": "JPEG",
+        "text/plain": "текст",
+        "application/pdf": "PDF",
+    }
     documents = [
         {
             "id": str(doc.pk),

@@ -146,6 +146,9 @@ class CloseCase(CaseView):
 
 
 _UNSAFE_NAME = re.compile(r"[^\w .()-]+")
+_PDF_ACTIVE = re.compile(
+    rb"/(?:JavaScript|JS|Launch|EmbeddedFile|OpenAction|AA|RichMedia|XFA)(?![A-Za-z])"
+)
 
 
 def safe_filename(name, mime):
@@ -153,7 +156,12 @@ def safe_filename(name, mime):
     stem = PurePath(str(name).replace("\\", "/")).name
     stem = "".join(ch for ch in stem if not unicodedata.category(ch).startswith("C"))
     stem = _UNSAFE_NAME.sub("_", stem).strip(" .")[:100]
-    extension = {"image/png": ".png", "image/jpeg": ".jpg", "text/plain": ".txt"}[mime]
+    extension = {
+        "image/png": ".png",
+        "image/jpeg": ".jpg",
+        "text/plain": ".txt",
+        "application/pdf": ".pdf",
+    }[mime]
     if not stem.lower().endswith((extension, ".jpeg")):
         stem = (stem or "document") + extension
     return stem
@@ -173,6 +181,11 @@ def read_document(upload):
         mime = "image/png"
     elif content.startswith(b"\xff\xd8\xff") and suffix in {".jpg", ".jpeg"}:
         mime = "image/jpeg"
+    elif content.startswith(b"%PDF-") and suffix == ".pdf":
+        # A7: keep PDFs inert. Active content is refused instead of being sanitised.
+        if _PDF_ACTIVE.search(content):
+            raise ValidationError({"file": ["PDF с активным содержимым не принимается."]})
+        mime = "application/pdf"
     elif suffix == ".txt" and b"\x00" not in content:
         try:
             content.decode("utf-8")
