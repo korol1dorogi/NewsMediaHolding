@@ -84,6 +84,11 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Lax"
 CSRF_COOKIE_SAMESITE = "Lax"
+# Enable only when the application is reached over HTTPS. Local HTTP stays usable.
+# The process environment must explicitly carry this setting in each deployment.
+HTTPS_SECURE_COOKIES = env_bool("HTTPS_SECURE_COOKIES", False)
+SESSION_COOKIE_SECURE = HTTPS_SECURE_COOKIES
+CSRF_COOKIE_SECURE = HTTPS_SECURE_COOKIES
 CSRF_TRUSTED_ORIGINS = env_list(
     "CSRF_TRUSTED_ORIGINS", ["http://localhost:8080", "http://127.0.0.1:8080"]
 )
