@@ -16,6 +16,18 @@ class Claim(models.Model):
     faulty = models.BooleanField(default=False)
     submit_consent_version = models.CharField(max_length=64, blank=True)
     submitted_at = models.DateTimeField(null=True, blank=True)
+    # Review (B6/B7).
+    hold = models.OneToOneField(
+        "payments.Hold", null=True, blank=True, on_delete=models.PROTECT, related_name="claim"
+    )
+    queued_at = models.DateTimeField(null=True, blank=True)
+    reviewer = models.ForeignKey(
+        "accounts.User", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    rejection_comment = models.TextField(blank=True)
+    commission_revoked = models.BooleanField(default=False)
+    outcome = models.CharField(max_length=16, blank=True)
+    outcome_comment = models.TextField(blank=True)
     sent_on = models.DateField(null=True, blank=True)
     response_due_on = models.DateField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -66,6 +78,53 @@ class ClaimPersonalData(models.Model):
 
     def __str__(self):
         return str(self.claim_id)
+
+
+class ReviewAssignment(models.Model):
+    """A lawyer's hold on one claim for review. Expires after CLAIM_REVIEW_TIMEOUT_HOURS."""
+
+    class Status(models.TextChoices):
+        ACTIVE = "active", "В работе"
+        DONE = "done", "Завершено"
+        EXPIRED = "expired", "Истекло"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    claim = models.ForeignKey(Claim, related_name="assignments", on_delete=models.CASCADE)
+    lawyer = models.ForeignKey("accounts.User", on_delete=models.PROTECT, related_name="+")
+    version = models.PositiveIntegerField()
+    status = models.CharField(max_length=8, choices=Status.choices, default=Status.ACTIVE)
+    taken_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+
+    class Meta:
+        ordering = ["-version"]
+        constraints = [
+            models.UniqueConstraint(fields=["claim", "version"], name="claims_assignment_version"),
+            models.UniqueConstraint(
+                fields=["claim"],
+                condition=models.Q(status="active"),
+                name="claims_one_active_assignment",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.claim_id} #{self.version} {self.status}"
+
+
+class ExcludedReviewer(models.Model):
+    """A lawyer whose review of this claim was found faulty: no re-review, no offers."""
+
+    claim = models.ForeignKey(Claim, related_name="excluded", on_delete=models.CASCADE)
+    lawyer = models.ForeignKey("accounts.User", on_delete=models.PROTECT, related_name="+")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["claim", "lawyer"], name="claims_excluded_once")
+        ]
+
+    def __str__(self):
+        return f"{self.claim_id} {self.lawyer_id}"
 
 
 def personalize(template_text, personal_data):
