@@ -86,7 +86,8 @@ jobs:
         run: |
           cp .env.example .env
           docker compose up -d --build --wait
-      - name: Playwright smoke
+          docker compose exec -T backend python manage.py seed_demo
+      - name: Playwright
         working-directory: e2e
         run: |
           npm ci --no-audit --no-fund
