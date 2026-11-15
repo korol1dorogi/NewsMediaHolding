@@ -246,3 +246,114 @@ export function useSubmitClaim(id: string) {
 export function has(caseData: { available_actions: Action[] } | undefined, action: Action) {
   return caseData?.available_actions.includes(action) ?? false;
 }
+
+// --- after review (F7) ----------------------------------------------------------------
+
+export type Offer = components["schemas"]["Offer"];
+
+export function useAcceptEdits(id: string) {
+  return useCaseMutation(id, (input: { version: number; claimVersion: number }) =>
+    unwrap(
+      api.POST("/api/cases/{id}/claim/accept-edits", {
+        params: { path: { id }, header: csrf() },
+        body: { expected_version: input.version, claim_version: input.claimVersion },
+      }),
+    ),
+  );
+}
+
+export function useRejectEdits(id: string) {
+  return useCaseMutation(id, (input: { version: number; claimVersion: number; comment: string }) =>
+    unwrap(
+      api.POST("/api/cases/{id}/claim/reject-edits", {
+        params: { path: { id }, header: csrf() },
+        body: {
+          expected_version: input.version,
+          claim_version: input.claimVersion,
+          comment: input.comment,
+        },
+      }),
+    ),
+  );
+}
+
+export function useMarkSent(id: string) {
+  return useCaseMutation(id, (input: { version: number; claimVersion: number; sentOn: string }) =>
+    unwrap(
+      api.POST("/api/cases/{id}/claim/mark-sent", {
+        params: { path: { id }, header: csrf() },
+        body: {
+          expected_version: input.version,
+          claim_version: input.claimVersion,
+          sent_on: input.sentOn,
+        },
+      }),
+    ),
+  );
+}
+
+export type Outcome = components["schemas"]["OutcomeInput"]["outcome"];
+
+export function useOutcome(id: string) {
+  return useCaseMutation(id, (input: { version: number; outcome: Outcome; comment: string }) =>
+    unwrap(
+      api.POST("/api/cases/{id}/claim/outcome", {
+        params: { path: { id }, header: csrf() },
+        body: { expected_version: input.version, outcome: input.outcome, comment: input.comment },
+      }),
+    ),
+  );
+}
+
+// --- specialist path (F9) -------------------------------------------------------------
+
+export function usePublishPool(id: string) {
+  return useCaseMutation(id, (version: number) =>
+    unwrap(
+      api.POST("/api/cases/{id}/pool", {
+        params: { path: { id }, header: csrf() },
+        body: {
+          expected_version: version,
+          consent: { accepted: true, text_version: CONSENT_TEXT_VERSION },
+        },
+      }),
+    ),
+  );
+}
+
+export function useOffers(id: string, version: number | undefined, enabled: boolean) {
+  return useQuery({
+    queryKey: [...keys.part(id, "offers"), version],
+    queryFn: () => unwrap(api.GET("/api/cases/{id}/offers", { params: { path: { id } } })),
+    enabled: enabled && version !== undefined,
+    refetchInterval: 15_000,
+  });
+}
+
+export function useAcceptOffer(id: string) {
+  return useCaseMutation(
+    id,
+    (input: { offerId: string; version: number; personalData: PersonalData | null }) =>
+      unwrap(
+        api.POST("/api/cases/{id}/offers/{offerId}/accept", {
+          params: { path: { id, offerId: input.offerId }, header: csrf() },
+          body: {
+            expected_version: input.version,
+            consent: { accepted: true, text_version: CONSENT_TEXT_VERSION },
+            personal_data: input.personalData,
+          },
+        }),
+      ),
+  );
+}
+
+export function useAcceptWork(id: string) {
+  return useCaseMutation(id, (input: { version: number; workVersion: number }) =>
+    unwrap(
+      api.POST("/api/cases/{id}/work/accept", {
+        params: { path: { id }, header: csrf() },
+        body: { expected_version: input.version, work_version: input.workVersion },
+      }),
+    ),
+  );
+}

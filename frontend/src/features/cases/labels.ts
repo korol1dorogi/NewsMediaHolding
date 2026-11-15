@@ -47,7 +47,7 @@ export const COMPANY_LABELS: Record<CompanyCheck["status"], string> = {
 export function rub(kopecks: number): string {
   const rubles = Math.floor(kopecks / 100);
   const rest = kopecks % 100;
-  const text = rubles.toLocaleString("ru-RU").replace(/ /g, " ");
+  const text = rubles.toLocaleString("ru-RU").replace(/[  ]/g, " ");
   return rest ? `${text},${String(rest).padStart(2, "0")} ₽` : `${text} ₽`;
 }
 
