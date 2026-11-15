@@ -30,11 +30,14 @@ def card_data(case):
         timestamp = serializers.DateTimeField().to_representation(snapshot.confirmed_at)
         version = snapshot.version
     missing = [row["key"] for row in facts if row["required"] and not row["value"]]
+    from apps.pool.similar import similar_cases
+
     return {
         "version": version,
         "confirmed_at": timestamp,
         "facts": facts,
         "missing_required_fields": missing,
+        "similar_cases": similar_cases(case),
     }
 
 
