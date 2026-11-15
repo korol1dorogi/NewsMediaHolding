@@ -516,7 +516,8 @@
               "pm.test('status 200', () => pm.response.to.have.status(200));",
               "const claim = pm.response.json();",
               "pm.test('first AI version', () => { pm.expect(claim.current_version).to.eql(1); pm.expect(claim.versions[0].author).to.eql('ai'); });",
-              "pm.test('company from the card', () => pm.expect(claim.versions[0].text).to.include('Учебный проект Демо'));"
+              "pm.test('company from the card', () => pm.expect(claim.versions[0].text).to.include('Учебный проект Демо'));",
+              "pm.environment.set('claimId', claim.id);"
             ]
           }
         }
@@ -778,6 +779,454 @@
       "request": {
         "method": "GET",
         "url": "{{baseUrl}}/api/cases/{{caseId}}/claim",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status 404', () => pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "queue has the claim without personal data",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/lawyer/claims",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status 200', () => pm.response.to.have.status(200));",
+              "const item = pm.response.json().items.find(i => i.id === pm.environment.get('claimId'));",
+              "pm.test('claim queued', () => pm.expect(item).to.be.an('object'));",
+              "pm.test('no contacts', () => pm.expect(pm.response.text()).to.not.include('Демо Пользователь'));",
+              "pm.environment.set('version', item.case_version);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "take claim",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/lawyer/claims/{{claimId}}/take",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-CSRFToken",
+            "value": "{{csrf}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"expected_version\": \"{{version}}\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status 200', () => pm.response.to.have.status(200));",
+              "const claim = pm.response.json();",
+              "pm.test('placeholders, not contacts', () => pm.expect(claim.version.template_text).to.include('{{claimant}}'));",
+              "pm.environment.set('assignment', claim.assignment_version);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "approve claim",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/lawyer/claims/{{claimId}}/approve",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-CSRFToken",
+            "value": "{{csrf}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"expected_version\": \"{{version}}\", \"assignment_version\": \"{{assignment}}\", \"claim_version\": 1}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status 200', () => pm.response.to.have.status(200));",
+              "pm.test('approved', () => pm.expect(pm.response.json().state).to.eql('claim_approved'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "logout lawyer",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/auth/logout",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-CSRFToken",
+            "value": "{{csrf}}"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status 200', () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "csrf for Anya",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/auth/csrf",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status 200', () => pm.response.to.have.status(200));",
+              "pm.environment.set('csrf', pm.cookies.get('csrftoken'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "login as Anya again",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/auth/login",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-CSRFToken",
+            "value": "{{csrf}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"username\": \"demo_anya\", \"password\": \"{{userPassword}}\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status 200', () => pm.response.to.have.status(200));",
+              "pm.environment.set('csrf', pm.cookies.get('csrftoken'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "case after approval",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/cases/{{caseId}}",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const body = pm.response.json();",
+              "const tries = Number(pm.environment.get('tries') || 0);",
+              "if (body.ai_state === 'thinking' && tries < 40) {",
+              "  pm.environment.set('tries', tries + 1);",
+              "  setTimeout(() => {}, 500);",
+              "  pm.execution.setNextRequest('case after approval');",
+              "  return;",
+              "}",
+              "pm.environment.set('tries', 0);",
+              "pm.test('status 200', () => pm.response.to.have.status(200));",
+              "pm.test('state claim_approved', () => pm.expect(body.state).to.eql('claim_approved'));",
+              "pm.test('ai idle', () => pm.expect(body.ai_state).to.eql('idle'));",
+              "pm.environment.set('version', body.version);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "mark sent",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/cases/{{caseId}}/claim/mark-sent",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-CSRFToken",
+            "value": "{{csrf}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"expected_version\": \"{{version}}\", \"claim_version\": 1, \"sent_on\": \"{{today}}\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status 200', () => pm.response.to.have.status(200));",
+              "pm.environment.set('version', pm.response.json().version);"
+            ]
+          }
+        },
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "pm.variables.set('today', new Date(Date.now() + 3 * 3600e3).toISOString().slice(0, 10));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "no response",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/cases/{{caseId}}/claim/outcome",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-CSRFToken",
+            "value": "{{csrf}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"expected_version\": \"{{version}}\", \"outcome\": \"no_response\", \"comment\": \"Ответа нет\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status 200', () => pm.response.to.have.status(200));",
+              "pm.test('no response', () => pm.expect(pm.response.json().state).to.eql('no_response'));",
+              "pm.environment.set('version', pm.response.json().version);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "choose specialist",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/cases/{{caseId}}/path",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-CSRFToken",
+            "value": "{{csrf}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"path\": \"specialist\", \"expected_version\": \"{{version}}\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status 200', () => pm.response.to.have.status(200));",
+              "pm.environment.set('version', pm.response.json().version);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "publish to pool",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/cases/{{caseId}}/pool",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-CSRFToken",
+            "value": "{{csrf}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"expected_version\": \"{{version}}\", \"consent\": {\"accepted\": true, \"text_version\": \"demo-v1\"}}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status 202', () => pm.response.to.have.status(202));",
+              "pm.test('pending moderation', () => pm.expect(pm.response.json().moderation_status).to.eql('pending'));",
+              "pm.environment.set('poolId', pm.response.json().id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "logout Anya again",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/auth/logout",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-CSRFToken",
+            "value": "{{csrf}}"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status 200', () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "csrf for lawyer 2",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/auth/csrf",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status 200', () => pm.response.to.have.status(200));",
+              "pm.environment.set('csrf', pm.cookies.get('csrftoken'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "login as lawyer 2",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/auth/login",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-CSRFToken",
+            "value": "{{csrf}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"username\": \"demo_lawyer_2\", \"password\": \"{{lawyerPassword}}\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status 200', () => pm.response.to.have.status(200));",
+              "pm.environment.set('csrf', pm.cookies.get('csrftoken'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "unmoderated card is hidden",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/lawyer/pool/{{poolId}}",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status 404', () => pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "no access to the case before an accepted offer",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/lawyer/cases/{{caseId}}",
         "header": []
       },
       "event": [
